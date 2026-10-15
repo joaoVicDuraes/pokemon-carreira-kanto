@@ -17,7 +17,7 @@ function stoneEvent(){
   const c=stoneCandidates();
   if(!c.length){
     lvlAll(5);
-    return {title:"Pedra Evolutiva", text:`Você acha uma Pedra Evolutiva, mas ninguém do time evolui com ela. A energia da pedra fortalece a equipe: <span class="reward">+5 níveis no time</span>.\nDica: Pikachu, Eevee, Vulpix, Growlithe, Staryu, Gloom e outros evoluem com pedra.`, highlight:null};
+    return {title:"Pedra Evolutiva", text:`Você acha uma Pedra Evolutiva, mas ninguém do time evolui com ela. A energia da pedra fortalece a equipe: <span class="reward">+5 níveis no time</span>.\nDica: ${(typeof RT!=="undefined"&&RT&&RT.stoneHint)||"Pikachu, Eevee, Vulpix, Growlithe, Staryu, Gloom e outros evoluem com pedra."}`, highlight:null};
   }
   const m=c.sort((a,b)=>monPower(b)-monPower(a))[0];
   const old=m.species, how=STONE[old]||"Pedra Evolutiva";
@@ -95,17 +95,27 @@ function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5
    A fatia removida é dividida entre as fatias da MESMA cor que não tiram Pokémon,
    então a proporção sorte/perigo da fase fica igual e a perda de Pokémon continua rara. */
 function usedLabels(){
-  const key = G.gymIndex>=GYMS.length ? "vr" : "g"+G.gymIndex;
+  const key = G.silver ? "ms" : G.gymIndex>=GYMS.length ? "vr" : "g"+G.gymIndex;
   if(!G.used || G.used.key!==key) G.used={key, lb:[]};
   return G.used.lb;
 }
 function markUsed(ev){ const u=usedLabels(); if(!u.includes(ev.lb)) u.push(ev.lb); }
+/* hora do dia (Johto): 1ª decisão de manhã, 2ª de tarde, 3ª à noite */
+function isNight(){ return !!(typeof RT!=="undefined" && RT && RT.dayNight) && G.step===2; }
+/* Mt. Silver usa o 10º conjunto quando a região tiver */
+function currentGymSet(){
+  const i = (G.silver && GYM_EVENTS[9]) ? 9 : Math.min(G.gymIndex, 8);
+  return GYM_EVENTS[Math.min(i, GYM_EVENTS.length-1)];
+}
 function wheelSectors(){
   const set=currentGymSet(), gr=greenRatio(), used=usedLabels();
-  const redW=set.red.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
+  const ok=ev=>(!ev.night || isNight()) && (!ev.cond || ev.cond());
+  const greens=set.green.filter(ok), reds=set.red.filter(ok);
+  const greenW=greens.map(ev=>ev.w||1), totG=greenW.reduce((a,b)=>a+b,0);
+  const redW=reds.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
   const all=[];
-  set.green.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr/set.green.length}));
-  set.red.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
+  greens.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr*greenW[i]/totG}));
+  reds.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
   const keep=all.filter(s=>!used.includes(s.ev.lb));
   if(!keep.length) return all;                      // segurança: nunca roda vazia
   all.filter(s=>used.includes(s.ev.lb)).forEach(gone=>{

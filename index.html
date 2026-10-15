@@ -389,6 +389,10 @@ body[data-region=johto] .logo-ed{color:#ffe9a8}
 body[data-region=johto] .rg-arrow{color:#2F6FD6}
 @media (prefers-reduced-motion:reduce){.rg-arrow{animation:none}}
 
+.t-dark{background:#705848}.t-steel{background:#B8B8D0;color:#223;text-shadow:none}
+.evobar.fr i{background:linear-gradient(90deg,#ffb3c7,#ff6f91)}
+
+
 </style>
 </head>
 <body>
@@ -802,7 +806,7 @@ function stoneEvent(){
   const c=stoneCandidates();
   if(!c.length){
     lvlAll(5);
-    return {title:"Pedra Evolutiva", text:`Você acha uma Pedra Evolutiva, mas ninguém do time evolui com ela. A energia da pedra fortalece a equipe: <span class="reward">+5 níveis no time</span>.\nDica: Pikachu, Eevee, Vulpix, Growlithe, Staryu, Gloom e outros evoluem com pedra.`, highlight:null};
+    return {title:"Pedra Evolutiva", text:`Você acha uma Pedra Evolutiva, mas ninguém do time evolui com ela. A energia da pedra fortalece a equipe: <span class="reward">+5 níveis no time</span>.\nDica: ${(typeof RT!=="undefined"&&RT&&RT.stoneHint)||"Pikachu, Eevee, Vulpix, Growlithe, Staryu, Gloom e outros evoluem com pedra."}`, highlight:null};
   }
   const m=c.sort((a,b)=>monPower(b)-monPower(a))[0];
   const old=m.species, how=STONE[old]||"Pedra Evolutiva";
@@ -880,17 +884,27 @@ function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5
    A fatia removida é dividida entre as fatias da MESMA cor que não tiram Pokémon,
    então a proporção sorte/perigo da fase fica igual e a perda de Pokémon continua rara. */
 function usedLabels(){
-  const key = G.gymIndex>=GYMS.length ? "vr" : "g"+G.gymIndex;
+  const key = G.silver ? "ms" : G.gymIndex>=GYMS.length ? "vr" : "g"+G.gymIndex;
   if(!G.used || G.used.key!==key) G.used={key, lb:[]};
   return G.used.lb;
 }
 function markUsed(ev){ const u=usedLabels(); if(!u.includes(ev.lb)) u.push(ev.lb); }
+/* hora do dia (Johto): 1ª decisão de manhã, 2ª de tarde, 3ª à noite */
+function isNight(){ return !!(typeof RT!=="undefined" && RT && RT.dayNight) && G.step===2; }
+/* Mt. Silver usa o 10º conjunto quando a região tiver */
+function currentGymSet(){
+  const i = (G.silver && GYM_EVENTS[9]) ? 9 : Math.min(G.gymIndex, 8);
+  return GYM_EVENTS[Math.min(i, GYM_EVENTS.length-1)];
+}
 function wheelSectors(){
   const set=currentGymSet(), gr=greenRatio(), used=usedLabels();
-  const redW=set.red.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
+  const ok=ev=>(!ev.night || isNight()) && (!ev.cond || ev.cond());
+  const greens=set.green.filter(ok), reds=set.red.filter(ok);
+  const greenW=greens.map(ev=>ev.w||1), totG=greenW.reduce((a,b)=>a+b,0);
+  const redW=reds.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
   const all=[];
-  set.green.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr/set.green.length}));
-  set.red.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
+  greens.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr*greenW[i]/totG}));
+  reds.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
   const keep=all.filter(s=>!used.includes(s.ev.lb));
   if(!keep.length) return all;                      // segurança: nunca roda vazia
   all.filter(s=>used.includes(s.ev.lb)).forEach(gone=>{
@@ -924,7 +938,7 @@ let LEADER_LINES = [
   "Hah! Você apagou meu fogo! Que calor de batalha!",
   "Hmph... a Equipe Rocket vai lembrar do seu nome."
 ];
-const TYPE_PT = {fire:"Fogo",water:"Água",grass:"Planta",electric:"Elétrico",normal:"Normal",poison:"Veneno",rock:"Pedra",psychic:"Psíquico",ghost:"Fantasma",fighting:"Lutador",ground:"Terra",bug:"Inseto",flying:"Voador",ice:"Gelo",dragon:"Dragão"};
+const TYPE_PT = {fire:"Fogo",water:"Água",grass:"Planta",electric:"Elétrico",normal:"Normal",poison:"Veneno",rock:"Pedra",psychic:"Psíquico",ghost:"Fantasma",fighting:"Lutador",ground:"Terra",bug:"Inseto",flying:"Voador",ice:"Gelo",dragon:"Dragão",dark:"Sombrio",steel:"Aço"};
 const REDUCE = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
 /* ---------- sprites ---------- */
@@ -935,7 +949,7 @@ function front(m, cls){
   return src ? `<img${cls ? ` class="${cls}"` : ""} src="${src}" alt="${m.species}">` : `<span class="emo">${m.e || "❔"}</span>`;
 }
 /* líderes e treinadores (sprites FRLG) e insígnias de Kanto */
-const FEM = f => ["Misty","Erika","Sabrina","Lorelei","Agatha"].includes(f.leader);
+const FEM = f => ["Misty","Erika","Sabrina","Lorelei","Agatha","Whitney","Jasmine","Clair","Karen"].includes(f.leader);
 function trainerKey(name){
   const k = /Rival|Champion/.test(name) ? RT.rivalChamp : name.toLowerCase().replace(/[^a-z]/g,'');
   return TRAINERS[RT.trainerPrefix+k] ? RT.trainerPrefix+k : k;
@@ -994,7 +1008,7 @@ function diffOf(before){
 function logAdd(kind, ic, text){ G.log.push({day:G.day, kind, ic, text}); }
 function postProcess(diff){
   diff.caught.forEach(m=>{ if(m.shiny) G.stats.shinies++; logAdd('catch','🟣',`Capturou ${m.species}${m.shiny?' ✨ SHINY':''} (Lv ${m.lv})`); });
-  diff.evos.forEach(([a,b])=>logAdd('evo','✨',`${a} evoluiu para ${b}`));
+  diff.evos.forEach(([a,b])=>logAdd(a==='Ovo'?'catch':'evo', a==='Ovo'?'🥚':'✨', a==='Ovo'?`O ovo chocou: ${b}`:`${a} evoluiu para ${b}`));
   diff.lost.forEach(l=>logAdd('bad','💔',`Perdeu ${l.species} (Lv ${l.lv})`));
   diff.newDex=[]; G.team.forEach(m=>{ if(dexRegister(m)) diff.newDex.push(m.species); });
   if(diff.newDex.length) logAdd('catch','📕',`Novo na Pokédex: ${diff.newDex.join(', ')}`);
@@ -1072,7 +1086,7 @@ function renderHUD(){
   const badges=GYMS.map((g,i)=>`<span class="hb ${i<G.gymIndex?'on':''}" title="${BADGE_NAMES[i]} — ${g.leader}">${badgeImg(i)}</span>`).join("")
     + `<span class="hb trophy ${G.phase==='champion'?'on':''}" title="Campeão da Liga">🏆</span>`;
   $hud.innerHTML=`<div class="hud-badges" role="img" aria-label="${G.gymIndex} de 8 insígnias">${badges}</div>
-    <div class="hud-chips"><div class="chip">PODER<b>${teamPower()}</b></div><div class="chip">TIME<b>${G.team.length}/6</b></div><div class="chip">DIA<b>${G.day}</b></div></div>`;
+    <div class="hud-chips"><div class="chip">PODER<b>${teamPower()}</b></div><div class="chip">TIME<b>${G.team.length}/6</b></div><div class="chip">DIA<b>${G.day}${RT && RT.dayNight ? ' '+TIME_IC[timeIdx()] : ''}</b></div></div>`;
 }
 function btn(id, label, sub, opt){ opt=opt||{};
   return `<button class="btn ${opt.primary?'primary':''}" ${opt.disabled?'disabled':''} data-act="${id}"${opt.arg?` data-arg="${opt.arg}"`:''}>${label}${sub?`<small>${sub}</small>`:''}</button>`; }
@@ -1111,7 +1125,12 @@ function partyHTML(diff, opts){
              if(per.dl>0) tags+=`<i class="d d-up">▲${per.dl}</i>`; else if(per.dl<0) tags+=`<i class="d d-dn">▼${-per.dl}</i>`; }
     }
     let evo;
-    if(d.evo && d.evoLv<99){
+    if(m.egg) evo=`<span class="evo-lbl">🥚 choca em ${m.hatch} ${m.hatch===1?'decisão':'decisões'} · não luta ainda</span>`;
+    else if(d.friend){
+      const pct=Math.min(100,(m.fr||0)/FR_MAX*100), lab=d.friend.includes('|')?d.friend.split('|').map((x,k)=>x+(k?' (noite)':' (dia)')).join(' / '):d.friend;
+      evo=`<div class="evobar fr"><i style="width:${pct}%"></i></div><span class="evo-lbl">💛 amizade → ${lab}${d.evo&&d.evoLv>=99?' · ou 💎 pedra na roleta':''}</span>`;
+    }
+    else if(d.evo && d.evoLv<99){
       const prev=prevEvoLv(m.species), pct=Math.max(0,Math.min(100,(m.lv-prev)/(d.evoLv-prev)*100));
       evo=`<div class="evobar"><i style="width:${pct}%"></i></div><span class="evo-lbl">${m.lv>=d.evoLv?`→ ${d.evo}: evolui no próximo ganho de nível!`:`→ ${d.evo} no Lv ${d.evoLv}`}</span>`;
     } else if(d.evo){
@@ -1151,7 +1170,7 @@ function title(){
   const sv=ready?loadSave():null, dk=ready?dexCounts():{c:0}, tot=ready?DEX_LIST.length:251;
   const dexBtn=btn('dex',`📕 POKéDEX ${dk.c}/${tot}`,`Tudo que você já registrou em ${LR.RT.name}`);
   const main = !ready
-    ? menu(btn('noop',`🚧 ${LR.RT.name.toUpperCase()} EM CONSTRUÇÃO`,'A Gen 2 está sendo preparada. Volte com ◀ para jogar Kanto.',{disabled:true}))
+    ? menu(btn('noop', LR.failed?`⚠️ NÃO DEU PRA CARREGAR ${LR.RT.name.toUpperCase()}`:`⏳ CARREGANDO ${LR.RT.name.toUpperCase()}...`, LR.failed?'Confira a internet e toque em ▶ de novo.':'Baixando os Pokémon da região, só um instante.',{disabled:true}))
     : G.confirmNew
     ? menu(btn('new','SIM, COMEÇAR DO ZERO','A carreira salva será apagada',{primary:true}), btn('newNo','NÃO, VOLTAR'))
     : sv ? menu(btn('continue','▶ CONTINUAR CARREIRA', saveSummary(sv), {primary:true}), btn('new','NOVO JOGO','Apaga a carreira salva'), dexBtn, btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'))
@@ -1213,6 +1232,8 @@ function decisionMenu(){
     btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio: se achar alguém, você escolhe quem sai':'Captura garantida de um Pokémon selvagem'));
 }
 function hub(){
+  if(G.silver) return hubSilver();
+  if(redGyaradosDue()) return redGyaradosScene();
   if(G.gymIndex>=GYMS.length){ if(!G.vrDone) return hubVR(); G.phase='elite'; return render(); }
   const g=GYMS[G.gymIndex], can=G.step>=STEPS_PER_GYM, city=CITY[g.n-1];
   const tw = can ? `Suas 3 decisões acabaram. ${g.leader} te espera no Ginásio de ${city}!`
@@ -1306,10 +1327,11 @@ function spinTicks(wheel, starts, tok){
 }
 function applyPicked(picked){
   G.pendingRoll=null;
-  const before=snap(); G.day++; G.step++; markUsed(picked.ev);
+  const nt=isNight(), before=snap(); G.day++; G.step++; markUsed(picked.ev);
   const res=picked.ev.fn(G);
   if(G.pendingRocketGameOver && G.team.length) G.team.pop();   // a Rocket leva o último parceiro
   if(picked.good) G.stats.eventsGood++; else G.stats.eventsBad++;
+  decisionTick(picked.good, nt);
   const diff=diffOf(before);
   logAdd(picked.good?'good':'bad', picked.ev.ic, res.title);
   postProcess(diff);
@@ -1317,17 +1339,17 @@ function applyPicked(picked){
   G.phase='event'; render();
 }
 function doTrain(){
-  const before=snap();
+  const nt=isNight(), before=snap();
   G.team.forEach(m=>{ m.lv+=2; tryEvolveSilent(m); });
-  G.step++; G.day++;
+  G.step++; G.day++; decisionTick(false, nt);
   const diff=diffOf(before); postProcess(diff);
   G.lastResult={kind:'train', good:true, ic:'🏋️', title:'Treino puxado',
     text:`Um dia inteiro de treino na rota. <span class="reward">Todo o time subiu 2 níveis.</span>\nSeguro e previsível. A roleta rende mais na média, mas pode punir.`, highlight:strongestMon(), diff};
   G.phase='event'; render();
 }
 function doSearch(){
-  const before=snap(), w=pickWild(), m=addMon(w.species, w.lv);
-  G.step++; G.day++;
+  const nt=isNight(), before=snap(), w=pickWild(), m=addMon(w.species, w.lv);
+  G.step++; G.day++; decisionTick(false, nt);
   const diff=diffOf(before); postProcess(diff);
   G.lastResult={kind:'search', good:true, ic:'🔎', title:'Captura garantida!',
     text:`Você vasculha a grama alta com calma... um <b>${m.species}</b> selvagem (Lv ${m.lv}) aparece!\nA Poké Bola balança... uma... duas... três... <span class="reward">Capturado!</span>`, highlight:m, diff, before};
@@ -1357,7 +1379,7 @@ function eventScreen(){
   const per = h && r.diff.per.get(h);
   const spot = h ? `<div class="spot ${per&&per.evo?'evo':''} ${h.shiny?'shiny':''}">${front(h)}</div>` : `<div class="spot"><span class="emo">${r.ic}</span></div>`;
   let extra="";
-  r.diff.evos.forEach(([a,b])=>{ if(!r.text.includes(b)) extra+=`\n✨ <span class="reward">${a} evoluiu para ${b}!</span>`; });
+  r.diff.evos.forEach(([a,b])=>{ if(a==='Ovo') extra+=`\n🥚 <span class="reward">O ovo chocou: é um ${b}!</span>`; else if(!r.text.includes(b)) extra+=`\n✨ <span class="reward">${a} evoluiu para ${b}!</span>`; });
   r.diff.caught.forEach(m=>{ if(m.shiny) extra+=`\n✨ <span class="reward">${m.species} é SHINY! Que sorte rara!</span>`; });
   if(r.diff.newDex && r.diff.newDex.length) extra+=`\n📕 <span class="reward">Novo na Pokédex: ${r.diff.newDex.join(', ')}!</span>`;
   if(nw) extra+=`\n<span class="bad">Mas seu time está cheio!</span> Escolha abaixo quem sai pra ${nw.species} entrar, ou deixe-o ir.`;
@@ -1381,7 +1403,7 @@ function challenge(isElite){
 function setBar(el,pct){ if(!el) return; el.style.width=pct+'%'; el.style.background=pct>50?'#58D080':pct>20?'#F8D030':'#F05838'; }
 function battleScreen(){
   const b=G.battle, f=b.foe, me=bestAttacker(f.t);
-  const intro = b.isElite ? (G.eliteIndex===ELITE.length-1 ? `O CAMPEÃO, seu antigo Rival, quer batalhar!` : `${f.leader}, da Elite Four, quer batalhar!`) : `${FEM(f)?'A Líder':'O Líder'} ${f.leader} quer batalhar!`;
+  const intro = b.isRed ? `...\nO Red quer batalhar!` : b.isElite ? (G.eliteIndex===ELITE.length-1 ? (RT.champBattle||`O CAMPEÃO, seu antigo Rival, quer batalhar!`) : `${f.leader}, da Elite Four, quer batalhar!`) : `${FEM(f)?'A Líder':'O Líder'} ${f.leader} quer batalhar!`;
   scene(`<div class="field">
       <div class="hpbox foe"><div class="hp-name"><span>${f.leader.toUpperCase()}</span>${typeTag(f.t)}</div><div class="hpbar"><span>PD</span><div class="track"><i id="hpF"></i></div></div><div class="hp-num">PODER ${f.power}</div></div>
       <div class="plat f"></div><div class="foe-av" id="avF">${leaderImg(f,'foe-tr')}</div>
@@ -1414,6 +1436,7 @@ function runBattle(me){
 }
 function applyWin(){
   const b=G.battle, before=snap();
+  if(b.isRed){ G.silverDone=true; G.phase='legend'; render(); return; }
   if(b.isElite){
     G.eliteIndex++; G.stats.wins++;
     G.team.forEach(m=>{ m.lv+=1; tryEvolveSilent(m); });
@@ -1454,7 +1477,7 @@ function eliteScreen(){
     ${leaderCard(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`)}
     ${vsBox(e.power,e.t,'elite')}<div class="dialog" id="tw"></div>
     ${menu(btn('fight',`⚔️ ENFRENTAR ${e.leader.toUpperCase()}`,'Derrota aqui encerra a carreira',{primary:true}))}${partyHTML()}`, '',
-    champ ? 'A última porta. Do outro lado, seu antigo Rival, agora Campeão, sorri.\n"Sabia que você viria."' : `${e.leader} te espera. Cinco batalhas seguidas, sem voltar para a estrada.`);
+    champ ? (RT.champIntro||'A última porta. Do outro lado, seu antigo Rival, agora Campeão, sorri.\n"Sabia que você viria."') : `${e.leader} te espera. Cinco batalhas seguidas, sem voltar para a estrada.`);
 }
 
 /* ---------- fim de carreira ---------- */
@@ -1475,26 +1498,28 @@ function logHTML(){
 function gameOverScreen(){
   if(!G.recorded){ G.recorded=true; G.newRecord=commitRecord(false); }
   const cause = G.pendingRocketGameOver ? 'A Equipe Rocket levou seu último Pokémon. Sem parceiros, não há jornada.'
-    : `Você perdeu para ${G.battle?G.battle.foe.leader:'o desafio'}. Em Kanto não existe revanche oficial: a carreira termina aqui.`;
-  scene(`<div class="over-title">FIM DA CARREIRA</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
+    : (G.battle && G.battle.isRed) ? `O Red venceu sem dizer uma palavra. A lenda do Mt. Silver continua invicta, mas o seu título de Campeão ninguém tira.`
+    : `Você perdeu para ${G.battle?G.battle.foe.leader:'o desafio'}. ${(RT&&RT.loseLine)||'Em Kanto não existe revanche oficial: a carreira termina aqui.'}`;
+  scene(`<div class="over-title">${G.battle&&G.battle.isRed?'O RED VENCEU':'FIM DA CARREIRA'}</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="dialog" id="tw"></div>${trainerCard(false)}${logHTML()}
     ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
     cause+'\nToda lenda também já perdeu. Levante e tente de novo.');
 }
 function hofScreen(){
-  if(!G.recorded){ G.recorded=true; G.newRecord=commitRecord(true); logAdd('gym','👑','Tornou-se Campeão de Kanto!'); }
+  if(!G.recorded){ G.recorded=true; G.newRecord=commitRecord(true); logAdd('gym','👑',`Tornou-se Campeão de ${RT.name}!`); }
   const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
   const conf=Array.from({length:24},(_,i)=>`<i class="conf" style="left:${(i*41)%100}%;background:${['#E3350D','#2A75BB','#FFCB05','#3BB54A'][i%4]};animation-delay:${(i%8)*0.35}s;pointer-events:none"></i>`).join("");
-  scene(`${conf}<div class="hof-title">HALL DA FAMA</div><div class="ribbon gold">CAMPEÃO DE KANTO!</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
+  const silverBtn = RT.silver && REGIONS[REGION].RED ? btn('silver','🏔️ SUBIR O MT. SILVER','Opcional: 3 decisões na montanha e o Red no topo',{primary:true}) : '';
+  scene(`${conf}<div class="hof-title">HALL DA FAMA</div><div class="ribbon gold">CAMPEÃO DE ${RT.name.toUpperCase()}!</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
-    'Seu Rival estende a mão: "Me enganei sobre você. Kanto tem um novo Campeão."\nSeu time entra para o Hall da Fama!');
+    ${menu(silverBtn, btn('restart','🔁 NOVA CARREIRA','',{primary:!silverBtn}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
+    RT.hofLine||'Seu Rival estende a mão: "Me enganei sobre você. Kanto tem um novo Campeão."\nSeu time entra para o Hall da Fama!');
 }
 
 /* =====================================================================
    ROTEADOR + ENTRADA
    ===================================================================== */
-const SCREENS={title, how, pick:pickScreen, hub, roulette:rouletteScreen, event:eventScreen, battle:battleScreen, win:winScreen, elite:eliteScreen, champion:hofScreen, gameover:gameOverScreen, dex:dexScreen};
+const SCREENS={title, how, pick:pickScreen, hub, roulette:rouletteScreen, event:eventScreen, battle:battleScreen, win:winScreen, elite:eliteScreen, champion:hofScreen, gameover:gameOverScreen, dex:dexScreen, legend:legendScreen};
 function render(){ (SCREENS[G.phase]||title)(); try{ window.scrollTo(0,0); }catch(e){} afterRender(); }
 function act(id, arg){
   switch(id){
@@ -1520,6 +1545,8 @@ function act(id, arg){
     case 'challenge': challenge(false); return;
     case 'league': G.vrDone=true; G.step=0; logAdd('gym','🏛️','Chegou ao Platô Índigo'); G.phase='elite'; break;
     case 'fight': challenge(true); return;
+    case 'silver': G.silver=true; G.step=0; G.phase='hub'; logAdd('gym','🏔️','Subiu o Mt. Silver'); break;
+    case 'fightRed': challengeRed(); return;
     case 'battleWin': applyWin(); return;
     case 'elite': G.phase='elite'; break;
     case 'gameover': G.phase='gameover'; break;
@@ -1620,6 +1647,7 @@ function loadDexRec(){ try{ const d=JSON.parse(localStorage.getItem(DEX_KEY)); i
 let DEXREC = loadDexRec();
 function storeDex(){ try{ localStorage.setItem(DEX_KEY, JSON.stringify(DEXREC)); }catch(e){} }
 function dexRegister(m){
+  if(m.egg || !DEX[m.species]) return false;
   let nw=false, ch=false;
   if(!DEXREC.c[m.species]){ DEXREC.c[m.species]=1; nw=true; ch=true; }
   if(m.shiny && !DEXREC.s[m.species]){ DEXREC.s[m.species]=1; ch=true; }
@@ -1706,19 +1734,90 @@ function phaseSound(){
   if(p==="battle") return SFX.battle();
   if(p==="win") return SFX.badge();
   if(p==="gameover") return SFX.over();
-  if(p==="champion") return SFX.champion();
+  if(p==="champion" || p==="legend") return SFX.champion();
 }
 
 /* ---------- gancho chamado no fim de cada render() ---------- */
 function afterRender(){
   if(!G) return;
   if(G.team) G.team.forEach(dexRegister);
-  if(G.phase==="gameover" || G.phase==="champion") clearSave(); else saveGame();
+  if(G.phase==="gameover" || G.phase==="champion" || G.phase==="legend") clearSave(); else saveGame();
   try{ phaseSound(); }catch(e){}
   setMuteBtn();
 }
 document.addEventListener("pointerdown", ()=>SFX.unlock(), {passive:true});
 
+/* =====================================================================
+   MOTOR GEN 2: ovos, amizade, hora do dia, Gyarados Vermelho, Mt. Silver/Red.
+   Tudo é guiado pelos dados da região: em Kanto nada disso dispara.
+   ===================================================================== */
+const FR_MAX = 5;   // decisões (bons eventos contam em dobro) para a amizade evoluir
+function monPower(m){ if(m.egg) return 0; const d=DEX[m.species]; return Math.round(d.base+(m.lv-5)*1.6); }
+const TIME_IC = ["☀️","🌇","🌙"], TIME_PT = ["MANHÃ","TARDE","NOITE"];
+function timeIdx(){ return Math.min(G.step, 2); }
+
+/* chamado em toda decisão, depois do efeito e antes do antes/depois */
+function decisionTick(good, night){
+  G.team.forEach(m=>{
+    if(m.egg){
+      m.hatch=(m.hatch||1)-1;
+      if(m.hatch<=0){
+        const pool=m.pool||["Togepi"], sp=pool[Math.floor(Math.random()*pool.length)];
+        const top=G.team.filter(x=>!x.egg).sort((a,b)=>b.lv-a.lv)[0];
+        m.species=sp; m.t=DEX[sp].t; m.e=DEX[sp].e; m.egg=false; delete m.pool; delete m.hatch;
+        m.lv=Math.max(5, Math.round((top?top.lv:10)*0.75)); m.shiny=Math.random()<1/20; m.hatched=true;
+        G.stats.caught++;
+      }
+      return;
+    }
+    const d=DEX[m.species]; if(!d || !d.friend) return;
+    m.fr=(m.fr||0)+1+(good?1:0);
+    if(m.fr>=FR_MAX){
+      let to=d.friend; if(to.includes("|")){ const p=to.split("|"); to=night?p[1]:p[0]; }
+      if(DEX[to]){ m.species=to; m.t=DEX[to].t; m.e=DEX[to].e; m.fr=0; G.stats.evolved++; m.friendEvo=true; }
+    }
+  });
+}
+
+/* cena fixa do Lago da Fúria (Johto, a caminho do 7º ginásio) */
+function redGyaradosDue(){ return !!(RT && RT.dayNight) && !G.silver && G.gymIndex===6 && !G.redGyarados; }
+function redGyaradosScene(){
+  G.redGyarados=true;
+  const before=snap(), m=addMon("Gyarados",30); m.shiny=true;
+  const diff=diffOf(before); postProcess(diff);
+  G.lastResult={kind:"event", good:true, ic:"🐟", title:"O Gyarados Vermelho!", highlight:m, diff, before,
+    text:`O sinal da Rocket forçou os Magikarp do Lago da Fúria a evoluir... e um deles ficou <b>vermelho</b>! Depois de uma batalha furiosa, <span class="reward">o Gyarados Vermelho (Lv ${m.lv}) ✨ entrou para o time!</span>\nEsta cena não gastou nenhuma decisão.`};
+  logAdd("catch","🐟","Gyarados Vermelho no Lago da Fúria");
+  G.phase="event"; render();
+}
+
+/* Mt. Silver e o Red (opcional, depois de ser campeão) */
+function hubSilver(){
+  const R=REGIONS[REGION].RED, can=G.step>=STEPS_PER_GYM;
+  const tw = can ? "O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada."
+                 : `Mt. Silver: a montanha mais perigosa do mundo. Faltam ${STEPS_PER_GYM-G.step} decisões até o topo.`;
+  scene(`<div class="ribbon plate"><span class="spk">✦</span>🏔️ MT. SILVER<span class="spk">✦</span></div>
+    ${leaderCard(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>")}
+    ${vsBox(R.power,R.t,"elite")}${pips()}<div class="dialog" id="tw"></div>
+    ${can ? menu(btn("fightRed","⚔️ ENFRENTAR O RED","Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
+    ${partyHTML(null,{manage:true})}`, "", tw);
+}
+function challengeRed(){
+  const foe=REGIONS[REGION].RED, mult=bestMatchup(foe.t), mine=teamPower(), eff=Math.round(mine*mult);
+  const ch=eliteChance(eff,foe.power);
+  G.battle={isElite:true, isRed:true, foe, mult, mine, eff, ch, win:Math.random()<ch};
+  G.phase="battle"; render();
+}
+function legendScreen(){
+  if(!G.legendRecorded){ G.legendRecorded=true; const r=loadRec(); r.legends=(r.legends||0)+1; saveRec(r); logAdd("gym","🧢","Venceu o Red no Mt. Silver"); }
+  const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
+  scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU O RED!</div>
+    <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
+    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
+    '...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!');
+}
+
+window.BUILD_ID="9586a228";
 /* =====================================================================
    REGIÕES: um motor, vários pacotes de dados (Kanto embutido, Johto a seguir)
    ===================================================================== */
@@ -1752,6 +1851,20 @@ function useRegion(id){
   DEXREC=loadDexRec();
   return true;
 }
+/* pacotes de região carregados sob demanda (johto.js ao lado do index.html) */
+const PACK_FILE = {johto:"johto.js"};
+function loadPack(id, cb){
+  const r=REGIONS[id]; if(!r || r.ready || r.loading || !PACK_FILE[id] || typeof document.createElement!=="function") return;
+  r.loading=true; r.failed=false;
+  const s=document.createElement("script"); s.src=PACK_FILE[id]+"?v="+(window.BUILD_ID||"");
+  s.onload=()=>{ r.loading=false; cb&&cb(); };
+  s.onerror=()=>{ r.loading=false; r.failed=true; cb&&cb(); };
+  document.head.appendChild(s);
+}
+function afterPack(){
+  if(REGIONS[LOBBY].ready && G && G.phase==="title"){ useRegion(LOBBY); setTheme(LOBBY); }
+  if(G && G.phase==="title") render();
+}
 function setTheme(id){
   try{ document.body.dataset.region = REGIONS[id].theme; }catch(e){}
   try{ const t=document.querySelector(".dex-title"); if(t) t.innerHTML="CARREIRA<br>"+REGIONS[id].RT.name.toUpperCase(); }catch(e){}
@@ -1760,7 +1873,7 @@ function lobbyGo(dir){
   const i=REGION_ORDER.indexOf(LOBBY), n=REGION_ORDER.length;
   LOBBY=REGION_ORDER[(i+dir+n)%n];
   try{ localStorage.setItem("kc_region", LOBBY); }catch(e){}
-  if(REGIONS[LOBBY].ready) useRegion(LOBBY);
+  if(REGIONS[LOBBY].ready) useRegion(LOBBY); else loadPack(LOBBY, afterPack);
   setTheme(LOBBY);
 }
 /* arrastar o dedo na tela inicial troca a região */
@@ -1775,7 +1888,8 @@ function lobbyGo(dir){
 })();
 
 /* ---------- boot ---------- */
-useRegion(REGIONS[LOBBY].ready ? LOBBY : "kanto"); setTheme(LOBBY);
+useRegion("kanto"); setTheme(LOBBY);
+if(!REGIONS[LOBBY].ready && typeof document.createElement==="function") loadPack(LOBBY, afterPack);
 G=newGame(); render();
 
 </script>

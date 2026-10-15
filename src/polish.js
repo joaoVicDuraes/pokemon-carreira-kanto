@@ -54,6 +54,7 @@ function loadDexRec(){ try{ const d=JSON.parse(localStorage.getItem(DEX_KEY)); i
 let DEXREC = loadDexRec();
 function storeDex(){ try{ localStorage.setItem(DEX_KEY, JSON.stringify(DEXREC)); }catch(e){} }
 function dexRegister(m){
+  if(m.egg || !DEX[m.species]) return false;
   let nw=false, ch=false;
   if(!DEXREC.c[m.species]){ DEXREC.c[m.species]=1; nw=true; ch=true; }
   if(m.shiny && !DEXREC.s[m.species]){ DEXREC.s[m.species]=1; ch=true; }
@@ -140,14 +141,14 @@ function phaseSound(){
   if(p==="battle") return SFX.battle();
   if(p==="win") return SFX.badge();
   if(p==="gameover") return SFX.over();
-  if(p==="champion") return SFX.champion();
+  if(p==="champion" || p==="legend") return SFX.champion();
 }
 
 /* ---------- gancho chamado no fim de cada render() ---------- */
 function afterRender(){
   if(!G) return;
   if(G.team) G.team.forEach(dexRegister);
-  if(G.phase==="gameover" || G.phase==="champion") clearSave(); else saveGame();
+  if(G.phase==="gameover" || G.phase==="champion" || G.phase==="legend") clearSave(); else saveGame();
   try{ phaseSound(); }catch(e){}
   setMuteBtn();
 }

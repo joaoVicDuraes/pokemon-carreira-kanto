@@ -160,6 +160,10 @@ ui = rd(os.path.join(BASE, "ui_v2.js"))
 
 polish = rd(os.path.join(BASE, "polish.js"))
 region = rd(os.path.join(BASE, "region.js"))
+gen2 = rd(os.path.join(BASE, "gen2_engine.js"))
+import hashlib
+BUILD = hashlib.sha1((rd(os.path.join(BASE, "johto_data.js")) + rd(os.path.join(BASE, "johto_events.js"))).encode("utf-8")).hexdigest()[:8]
+region = "window.BUILD_ID=%s;\n" % json.dumps(BUILD) + region
 sprite_js += "const DEX_LIST = %s;\n" % json.dumps([[DEX_NUM[n], n] for n in dex_names], ensure_ascii=False, separators=(",", ":"))
 # prévia do lobby para regiões cujo pacote ainda não foi carregado (só os iniciais)
 sprite_js += "const LOBBY_PREVIEW = %s;\n" % json.dumps({"johto": [uri(os.path.join(SPR, "%04d.png" % n)) for n in (152, 155, 158)]}, separators=(",", ":"))
@@ -200,8 +204,40 @@ html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
         '<button id="mute" data-act="mute" aria-label="Desligar som">🔊</button>'
         '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main><div id="dexfoot"><b class="b"></b><b class="r"></b><b class="y"></b><b class="g"></b></div></div>\n'
-        '<script>\n"use strict";\n' + letify(sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n" + polish, REGION_VARS) + "\n" + region + "\n</script>\n</body>\n</html>\n")
+        '<script>\n"use strict";\n' + letify(sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n" + polish + "\n" + gen2, REGION_VARS) + "\n" + region + "\n</script>\n</body>\n</html>\n")
 for nm in REGION_VARS:
     assert re.search(r"\blet %s\s*=" % nm, html), "região: %s não virou let" % nm
 io.open(OUT, "w", encoding="utf-8").write(html)
 print("wrote", OUT, len(html), "chars")
+
+# ---------- pacote Johto (johto.js, carregado sob demanda) ----------
+G2 = range(152, 252)
+jparts = []
+for var, folder in sets.items():
+    d = {}
+    for n in G2:
+        u = uri(os.path.join(folder, "%04d.png" % n))
+        if u: d["#%d" % n] = u
+    assert len(d) == 100, "%s: só %d sprites da Gen 2" % (var, len(d))
+    jparts.append("J_SPR.%s=%s;" % (var, json.dumps(d, separators=(",", ":"))))
+JTR = {"j_" + k: v for k, v in folder_uris("trainers_johto").items()}
+for k in ["falkner","bugsy","whitney","morty","chuck","jasmine","pryce","clair","will","koga","bruno","karen","lance","silver","red"]:
+    assert "j_" + k in JTR, "falta treinador de Johto " + k
+JBD = folder_uris("badges_johto"); assert len(JBD) == 8
+EGG = ("data:image/svg+xml," + "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E"
+       "%3Cpath d='M6 2h4v1h1v1h1v2h1v4h-1v2h-1v1h-1v1H6v-1H5v-1H4v-2H3V6h1V4h1V3h1z' fill='%23111'/%3E"
+       "%3Cpath d='M6 3h4v1h1v2h1v4h-1v2h-1v1H6v-1H5v-2H4V6h1V4h1z' fill='%23fff8e0'/%3E"
+       "%3Cpath d='M7 5h2v1H7zM5 8h2v2H5zM9 9h2v2H9z' fill='%2378c850'/%3E%3C/svg%3E")
+jhead = ('/* gerado por assemble.py — não editar à mão */\n(function(){ const J_SPR={};\n' + "\n".join(jparts) + "\n" +
+         'for(const set of ["SPRITES","SHINY","BACKS","SHINY_BACKS"]){ const tgt={SPRITES,SHINY,BACKS,SHINY_BACKS}[set]; for(const k in J_SPR[set]){ tgt[J_NUM2NAME[k]]=J_SPR[set][k]; } }\n'
+         'SPRITES["Ovo"]=%s; })();\n' % json.dumps(EGG) +
+         'Object.assign(TRAINERS, %s);\n' % json.dumps(JTR, separators=(",", ":")) +
+         'const J_BADGES = %s;\n' % json.dumps([JBD[str(i)] for i in range(1, 9)], separators=(",", ":")))
+jdata = rd(os.path.join(BASE, "johto_data.js"))
+names2 = re.findall(r'\[(\d{3}),"([^"]+)"', jdata)
+assert len(names2) == 100, len(names2)
+jnum = 'const J_NUM2NAME = {%s};\n' % ",".join('"#%s":%s' % (n, json.dumps(nm, ensure_ascii=False)) for n, nm in names2)
+johto = '"use strict";\n' + jnum + jhead + rd(os.path.join(BASE, "johto_events.js")) + "\n" + jdata
+JOUT = os.path.join(os.path.dirname(BASE), "johto.js")
+io.open(JOUT, "w", encoding="utf-8").write(johto)
+print("wrote", JOUT, len(johto), "chars")

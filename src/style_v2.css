@@ -363,3 +363,7 @@ body[data-region=johto] .logo-ed{color:#ffe9a8}
 .rg-dots{display:flex;justify-content:center;gap:6px;margin-top:6px}.rg-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.4)}.rg-dots i.on{background:var(--yellow)}
 body[data-region=johto] .rg-arrow{color:#2F6FD6}
 @media (prefers-reduced-motion:reduce){.rg-arrow{animation:none}}
+
+.t-dark{background:#705848}.t-steel{background:#B8B8D0;color:#223;text-shadow:none}
+.evobar.fr i{background:linear-gradient(90deg,#ffb3c7,#ff6f91)}
+

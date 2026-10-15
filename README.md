@@ -24,6 +24,12 @@ src/
   sprites/            sprites FireRed/LeafGreen (frente, costas, shiny), treinadores e insígnias
   make_og.py          regenera og.png e apple-touch-icon.png (precisa do Chrome)
   test_game.js        testes: node src/test_game.js
+  region.js           motor de regiões e lobby (◀ KANTO ▶ JOHTO)
+  gen2_engine.js      ovos, amizade, dia/noite, Gyarados Vermelho, Mt. Silver/Red
+  johto_data.js       Pokédex 251, tipos Gen 2, ginásios e Elite Four de Johto
+  johto_events.js     eventos da roleta de Johto (rascunho em docs/johto-eventos-rascunho.md)
+  test_johto.js       testes de Johto: node src/test_johto.js
+johto.js              pacote de Johto (gerado; carregado quando o jogador escolhe Johto)
 ```
 
 ## Rebuild depois de editar

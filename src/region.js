@@ -31,6 +31,20 @@ function useRegion(id){
   DEXREC=loadDexRec();
   return true;
 }
+/* pacotes de região carregados sob demanda (johto.js ao lado do index.html) */
+const PACK_FILE = {johto:"johto.js"};
+function loadPack(id, cb){
+  const r=REGIONS[id]; if(!r || r.ready || r.loading || !PACK_FILE[id] || typeof document.createElement!=="function") return;
+  r.loading=true; r.failed=false;
+  const s=document.createElement("script"); s.src=PACK_FILE[id]+"?v="+(window.BUILD_ID||"");
+  s.onload=()=>{ r.loading=false; cb&&cb(); };
+  s.onerror=()=>{ r.loading=false; r.failed=true; cb&&cb(); };
+  document.head.appendChild(s);
+}
+function afterPack(){
+  if(REGIONS[LOBBY].ready && G && G.phase==="title"){ useRegion(LOBBY); setTheme(LOBBY); }
+  if(G && G.phase==="title") render();
+}
 function setTheme(id){
   try{ document.body.dataset.region = REGIONS[id].theme; }catch(e){}
   try{ const t=document.querySelector(".dex-title"); if(t) t.innerHTML="CARREIRA<br>"+REGIONS[id].RT.name.toUpperCase(); }catch(e){}
@@ -39,7 +53,7 @@ function lobbyGo(dir){
   const i=REGION_ORDER.indexOf(LOBBY), n=REGION_ORDER.length;
   LOBBY=REGION_ORDER[(i+dir+n)%n];
   try{ localStorage.setItem("kc_region", LOBBY); }catch(e){}
-  if(REGIONS[LOBBY].ready) useRegion(LOBBY);
+  if(REGIONS[LOBBY].ready) useRegion(LOBBY); else loadPack(LOBBY, afterPack);
   setTheme(LOBBY);
 }
 /* arrastar o dedo na tela inicial troca a região */
@@ -54,5 +68,6 @@ function lobbyGo(dir){
 })();
 
 /* ---------- boot ---------- */
-useRegion(REGIONS[LOBBY].ready ? LOBBY : "kanto"); setTheme(LOBBY);
+useRegion("kanto"); setTheme(LOBBY);
+if(!REGIONS[LOBBY].ready && typeof document.createElement==="function") loadPack(LOBBY, afterPack);
 G=newGame(); render();

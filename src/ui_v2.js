@@ -154,7 +154,8 @@ function pips(){
   return h+`<span>DECISÕES RESTANTES: ${Math.max(0,STEPS_PER_GYM-G.step)}</span></div>`; }
 
 /* ---------- time (estilo menu de party) ---------- */
-function partyHTML(diff){
+function partyHTML(diff, opts){
+  opts=opts||{};
   if(!G.team.length && !(diff && diff.lost.length)) return "";
   const top=new Set(topThree());
   const rows=G.team.map((m,i)=>{
@@ -169,16 +170,27 @@ function partyHTML(diff){
     if(d.evo && d.evoLv<99){
       const prev=prevEvoLv(m.species), pct=Math.max(0,Math.min(100,(m.lv-prev)/(d.evoLv-prev)*100));
       evo=`<div class="evobar"><i style="width:${pct}%"></i></div><span class="evo-lbl">${m.lv>=d.evoLv?`→ ${d.evo}: evolui no próximo ganho de nível!`:`→ ${d.evo} no Lv ${d.evoLv}`}</span>`;
-    } else if(d.evo) evo=`<span class="evo-lbl">→ ${d.evo} com Pedra Evolutiva</span>`;
+    } else if(d.evo){
+      const how=STONE[m.species];
+      const to=BRANCH[m.species]?BRANCH[m.species].join('/'):d.evo;
+      evo=`<span class="evo-lbl">💎 → ${to} ${how==='troca'?'por troca':'com '+(how||'Pedra Evolutiva')} (evento da roleta)</span>`;
+    }
     else evo=`<span class="evo-lbl">★ forma final</span>`;
+    let rel="";
+    if(opts.manage && i>0){
+      rel = G.releaseAsk===i
+        ? `<div class="rel-ask">Soltar ${m.species}? <button class="rel yes" data-act="releaseYes" data-arg="${i}">SIM, SOLTAR</button><button class="rel" data-act="releaseNo">NÃO</button></div>`
+        : `<button class="rel" data-act="release" data-arg="${i}" aria-label="Soltar ${m.species}">SOLTAR</button>`;
+    }
     return `<div class="mon ${i===0?'lead':''} ${top.has(m)&&G.team.length>3?'top':''}">
       <div class="sp">${front(m)}</div>
       <div><div class="m-name">${i===0?'<span class="star">★</span> ':''}${m.species}${m.shiny?' <span class="shiny">✨</span>':''}</div>
-        <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${tags}</div>${evo}</div>
+        <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${tags}</div>${evo}${rel}</div>
       <div class="m-pow">PODER<b>${monPower(m)}</b></div></div>`;
   }).join("");
   const lost=diff ? diff.lost.map(l=>`<div class="mon lost"><div class="sp">${front(l)}</div><div><div class="m-name">${l.species}</div><div class="m-sub"><i class="d d-dn">PERDIDO</i></div></div><div></div></div>`).join("") : "";
-  return `<div class="party-h">SEU TIME (${G.team.length}/6)<small>O poder vem dos 3 mais fortes${G.team.length>3?' — marcados com TOP3':''}. ★ = seu inicial.</small></div><div class="party">${rows}${lost}</div>`;
+  const hint = opts.manage && G.team.length>1 ? ' Solte quem não ajuda pra liberar espaço (não gasta decisão; o inicial fica).' : '';
+  return `<div class="party-h">SEU TIME (${G.team.length}/6)<small>O poder vem dos 3 mais fortes${G.team.length>3?' — marcados com TOP3':''}. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
 }
 
 /* =====================================================================
@@ -236,7 +248,7 @@ function decisionMenu(){
   return menu(
     btn('roll','🎲 GIRAR A ROLETA',`${Math.round(greenRatio()*100)}% de sorte nesta fase · rende mais na média, mas arrisca`,{primary:true}),
     btn('train','🏋️ TREINAR FIRME','+2 níveis no time inteiro · seguro'),
-    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio (6/6)':'Captura garantida de um Pokémon selvagem',{disabled:G.team.length>=6}));
+    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio (6/6): solte um Pokémon na lista abaixo':'Captura garantida de um Pokémon selvagem',{disabled:G.team.length>=6}));
 }
 function hub(){
   if(G.gymIndex>=GYMS.length){ if(!G.vrDone) return hubVR(); G.phase='elite'; return render(); }
@@ -247,7 +259,7 @@ function hub(){
     ${leaderCard(g.e,'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${g.b}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`)}
     ${vsBox(g.power,g.t,'gym')}${pips()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('challenge',`⚔️ DESAFIAR ${g.leader.toUpperCase()}`,'Perdeu, acabou a carreira',{primary:true})) : decisionMenu()}
-    ${partyHTML()}`, '', tw);
+    ${partyHTML(null,{manage:true})}`, '', tw);
 }
 function hubVR(){
   const e=ELITE[0], can=G.step>=STEPS_PER_GYM;
@@ -257,7 +269,7 @@ function hubVR(){
     ${leaderCard(e.e,'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`)}
     ${vsBox(e.power,e.t,'elite')}${pips()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('league','🏛️ ENTRAR NO PLATÔ ÍNDIGO','Sem volta a partir daqui',{primary:true})) : decisionMenu()}
-    ${partyHTML()}`, '', tw);
+    ${partyHTML(null,{manage:true})}`, '', tw);
 }
 
 /* ---------- roleta circular ---------- */
@@ -432,7 +444,7 @@ function trainerCard(won){
   const team=G.team.map(m=>front(m,'tc-img')).join("") || '<span>sem Pokémon</span>';
   return `<div class="tcard"><div class="tc-head"><span>CARTÃO DE TREINADOR</span><span>${(G.starter||'').toUpperCase()}</span></div>
     <div class="tc-badges">${badges}</div>
-    <div class="tc-grid"><span>Chegou até</span><b>${reached}</b><span>Dias na estrada</span><b>${G.day}</b><span>Capturas</span><b>${s.caught}</b><span>Evoluções</span><b>${s.evolved}</b><span>Vitórias oficiais</span><b>${s.wins}</b><span>Sorte / perigo</span><b>${s.eventsGood} / ${s.eventsBad}</b><span>Roubados / fugiram</span><b>${s.stolen} / ${s.fled}</b><span>Shinies</span><b>${s.shinies}</b></div>
+    <div class="tc-grid"><span>Chegou até</span><b>${reached}</b><span>Dias na estrada</span><b>${G.day}</b><span>Capturas</span><b>${s.caught}</b><span>Evoluções</span><b>${s.evolved}</b><span>Vitórias oficiais</span><b>${s.wins}</b><span>Sorte / perigo</span><b>${s.eventsGood} / ${s.eventsBad}</b><span>Roubados / fugiram / soltos</span><b>${s.stolen} / ${s.fled} / ${s.released||0}</b><span>Shinies</span><b>${s.shinies}</b></div>
     <div class="tc-team">${team}</div></div>`;
 }
 function logHTML(){
@@ -480,8 +492,16 @@ function act(id, arg){
     case 'battleWin': applyWin(); return;
     case 'elite': G.phase='elite'; break;
     case 'gameover': G.phase='gameover'; break;
+    case 'release': G.releaseAsk=Number(arg); break;
+    case 'releaseNo': G.releaseAsk=null; break;
+    case 'releaseYes': {
+      const m=releaseMon(Number(arg)); G.releaseAsk=null;
+      if(m) logAdd('bad','👋',`Soltou ${m.species} (Lv ${m.lv}) na natureza`);
+      break;
+    }
     default: return;
   }
+  if(id!=='release' && id!=='releaseNo' && id!=='releaseYes') G.releaseAsk=null;
   render();
 }
 document.addEventListener('click', e=>{

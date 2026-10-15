@@ -1,3 +1,4 @@
 src/sprites.json
 __pycache__/
 *.pyc
+src/_check.js

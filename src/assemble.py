@@ -42,6 +42,27 @@ eblock2 = re.sub(r"power:\d+", lambda m: "power:%d" % next(it2), eblock)
 assert eblock2.count("power:") == 5
 A = A[:gi] + gblock2 + eblock2 + A[ee:]
 
+# ---------- Pokédex completa (151) ----------
+import sys; sys.path.insert(0, BASE)
+from dex151 import TABLE, SPECIAL, BRANCH, STONE
+old_blk = A[:A.index("const STARTERS")]
+OLD = {m.group(1): (int(m.group(3)), m.group(2)) for m in re.finditer(r'^\s*([A-Za-z]+):\{t:"\w+",e:"([^"]*)",base:(\d+)', old_blk, re.M)}
+OLD["Nidoran♂"] = OLD.pop("Nidoran")   # o antigo "Nidoran" evoluía para Nidorino: é a linha ♂
+targets = {r[4] for r in TABLE if r[4]} | {x for v in BRANCH.values() for x in v}
+dex_rows = []
+for num, name, t, base, evo, lv in TABLE:
+    b, e = OLD.get(name, (base, "⚪"))
+    ev = ',evo:%s,evoLv:%d' % (json.dumps(evo, ensure_ascii=False), lv) if evo else ',evo:null'
+    dex_rows.append('  %s:{t:"%s",e:%s,base:%d%s}' % (json.dumps(name, ensure_ascii=False), t, json.dumps(e, ensure_ascii=False), b, ev))
+new_dex = ("const DEX = {\n" + ",\n".join(dex_rows) + "\n};\n"
+           "const BRANCH = " + json.dumps(BRANCH, ensure_ascii=False) + ";\n"
+           "const STONE = " + json.dumps(STONE, ensure_ascii=False) + ";\n")
+A = new_dex + A[A.index("const STARTERS"):]
+pool = [r[1] for r in TABLE if r[1] not in targets and r[1] not in SPECIAL]
+A, n = re.subn(r"const WILD_POOL=\[.*?\];", "const WILD_POOL=" + json.dumps(pool, ensure_ascii=False) + ";", A, count=1, flags=re.S)
+assert n == 1
+print("DEX", len(TABLE), "| na grama", len(pool))
+
 # ---------- B1: helpers honestos + bugs ----------
 B1 = re.sub(r"function addMon\(species,lv\)\{.*?G\.team\.push\(m\);G\.stats\.caught\+\+;return m;\}",
     "function addMon(species,lv,raw){const m=mon(species,lv);m.shiny=Math.random()<SHINY_RATE;"
@@ -90,19 +111,20 @@ for ch in chunks:
 B1 = head + "".join(fixed)
 assert not warn, warn
 
+B1 = sub1(B1, '"Nidoran"', '"Nidoran♂"', "nidoran ginasio 1")
+
 # ---------- B2: evolução em cadeia (Lv alto evolui 2 estágios) ----------
 B2 = re.sub(r"function tryEvolveSilent\(m\)\{.*?\}\}",
     "function tryEvolveSilent(m){let g=0;while(g++<3){const d=DEX[m.species];if(d.evo&&d.evoLv<99&&m.lv>=d.evoLv){doEvolve(m);G.stats.evolved++;}else break;}}",
     B2, count=1, flags=re.S)
 assert "while(g++<3)" in B2
+B2, n = re.subn(r"function doEvolve\(m\)\{.*?\}\n?", "", B2, count=1, flags=re.S)
+assert n == 1, "doEvolve antigo não encontrado"
+EXTRA = rd(os.path.join(BASE, "extra_logic.js"))
 
 # ---------- sprites: frente, costas, shiny ----------
-spec = importlib.util.spec_from_file_location("bg", os.path.join(BASE, "build_game.py"))
-bg = importlib.util.module_from_spec(spec); spec.loader.exec_module(bg)
-DEX_NUM = bg.DEX_NUM
-dex_names = re.findall(r"^\s*([A-Z][A-Za-z]+):\{t:", A, re.M)
-missing = [n for n in dex_names if n not in DEX_NUM]
-assert not missing, missing
+DEX_NUM = {r[1]: r[0] for r in TABLE}
+dex_names = [r[1] for r in TABLE]
 def uri(path):
     return "data:image/png;base64," + base64.b64encode(open(path, "rb").read()).decode("ascii") if os.path.exists(path) else None
 sets = {"SPRITES": SPR, "SHINY": os.path.join(SPR, "shiny"), "BACKS": os.path.join(SPR, "back"), "SHINY_BACKS": os.path.join(SPR, "back", "shiny")}
@@ -125,6 +147,6 @@ html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
         '<title>Pokémon Carreira de Treinador — Kanto</title>\n<style>\n' + css + '\n</style>\n</head>\n<body>\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
         '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main></div>\n'
-        '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + ui + "\n</script>\n</body>\n</html>\n")
+        '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n</script>\n</body>\n</html>\n")
 io.open(OUT, "w", encoding="utf-8").write(html)
 print("wrote", OUT, len(html), "chars")

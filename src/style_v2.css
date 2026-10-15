@@ -164,6 +164,10 @@ b{font-weight:normal;color:var(--blue)}
 .evobar i{display:block;height:100%;background:linear-gradient(90deg,#3fb8ff,#8fe6ff)}
 .evo-lbl{display:block;font-size:16px;color:#666;margin-top:1px}
 .m-pow{text-align:right;font-family:'PS2P';font-size:6px;color:#666}
+.rel{font-family:'PS2P';font-size:6px;margin-top:6px;margin-right:6px;padding:5px 7px;background:#fff;color:var(--red);border:2px solid var(--red);border-radius:5px;cursor:pointer}
+.rel:hover,.rel:focus-visible{background:#ffe3dc;outline:none}
+.rel.yes{background:var(--red);color:#fff}
+.rel-ask{font-size:17px;color:var(--red-d);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
 .m-pow b{display:block;font-size:12px;color:var(--blue);margin-top:3px}
 
 /* ---------- roleta ---------- */

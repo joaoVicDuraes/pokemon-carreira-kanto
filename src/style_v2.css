@@ -1,0 +1,248 @@
+@font-face{font-family:'PS2P';src:url(__FONT_PS2P__) format('woff2');font-display:block}
+@font-face{font-family:'VT323';src:url(__FONT_VT323__) format('woff2');font-display:block}
+:root{--red:#E3350D;--red-d:#7A1500;--blue:#2A75BB;--navy:#1B2A5C;--ink:#2B2B2B;--yellow:#FFCB05;--cream:#FFFBEA;--frame:#283A6E;--ok:#3BB54A;--k:#1a1a1a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{background:#0E1530 radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1px,transparent 0) 0 0/14px 14px;color:var(--ink);font-family:'VT323',ui-monospace,monospace;font-size:20px;line-height:1.15;display:flex;justify-content:center;padding:18px 8px 40px}
+b{font-weight:normal;color:var(--blue)}
+.px{font-family:'PS2P',monospace}
+
+/* ---------- moldura Pokédex ---------- */
+#app{width:100%;max-width:560px;background:var(--red);border-radius:18px 18px 24px 24px;padding:0 12px 14px;box-shadow:0 0 0 4px var(--red-d),0 16px 40px rgba(0,0,0,.6)}
+#dex{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:4px solid var(--red-d);margin-bottom:10px}
+.lens{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 3px var(--k);flex:none}
+.lens i{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#d6f2ff,#3aa0ff 45%,#0b4fa8);box-shadow:inset 0 0 0 2px #0a3a80;animation:lens 3s ease-in-out infinite}
+@keyframes lens{50%{filter:brightness(1.35)}}
+.leds{display:flex;gap:6px}.leds b{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 2px var(--k)}
+.leds .r{background:#ff6b6b}.leds .y{background:#ffd84a}.leds .g{background:#5bd65b}
+.dex-title{margin-left:auto;font-family:'PS2P';font-size:9px;color:#fff;text-shadow:2px 2px 0 var(--red-d);letter-spacing:1px;text-align:right;line-height:1.6}
+
+/* ---------- HUD ---------- */
+#hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+#hud:empty{display:none}
+.hud-badges{display:flex;gap:3px;background:var(--k);padding:5px 7px;border-radius:20px}
+.hb{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:#3a3a3a;filter:grayscale(1);opacity:.35}
+.hb.on{background:radial-gradient(circle at 35% 30%,#fff6c2,#f5c200);filter:none;opacity:1;box-shadow:0 0 0 2px #fff,0 0 8px #ffd84a}
+.hud-chips{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.chip{font-family:'PS2P';font-size:7px;background:#fff;border:3px solid var(--k);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px;min-width:58px}
+.chip b{font-size:11px;color:var(--red)}
+
+/* ---------- tela ---------- */
+.scene{background:var(--cream);border-radius:10px;border:4px solid var(--k);box-shadow:inset 0 0 0 3px #e2dbbf;padding:14px;min-height:480px;position:relative;overflow:hidden}
+.scene.event.good{background:linear-gradient(#E8FBEA,var(--cream) 45%)}
+.scene.event.bad{background:linear-gradient(#FFE9E3,var(--cream) 45%)}
+
+/* ---------- caixa de diálogo ---------- */
+.dialog{background:#fff;border:4px solid var(--frame);border-radius:10px;box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 5px #9DBCEB,0 3px 0 #14204a;padding:12px 16px 14px;font-size:22px;line-height:1.2;color:var(--ink);white-space:pre-line;min-height:76px;position:relative;margin:10px 0;cursor:pointer}
+.dialog .reward{color:#1f8a2e}.dialog .bad{color:var(--red)}
+.dialog.done::after{content:'▼';position:absolute;right:12px;bottom:6px;color:var(--red);font-size:14px;animation:blink 1s steps(2) infinite}
+.speaker{display:inline-block;font-family:'PS2P';font-size:8px;background:var(--frame);color:#fff;padding:6px 9px 8px;border-radius:6px 6px 0 0;margin:6px 0 -14px 12px;position:relative;z-index:1}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- botões estilo menu ---------- */
+.menu{display:flex;flex-direction:column;gap:9px;margin-top:10px}
+.btn{font-family:'PS2P',monospace;font-size:10px;line-height:1.5;text-align:left;background:#fff;color:var(--ink);border:3px solid var(--frame);border-radius:8px;padding:12px 14px 12px 30px;cursor:pointer;position:relative;box-shadow:0 4px 0 var(--frame);transition:transform .06s,background .1s}
+.btn::before{content:'▶';position:absolute;left:11px;top:14px;color:var(--red);opacity:0;font-size:10px}
+.btn:hover::before,.btn:focus-visible::before{opacity:1}
+.btn:hover{background:#FFF6CC}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--frame)}
+.btn:focus-visible{outline:3px dashed var(--blue);outline-offset:3px}
+.btn small{display:block;font-family:'VT323';font-size:18px;color:#666;margin-top:4px}
+.btn.primary{background:var(--red);color:#fff;border-color:#5c1000;box-shadow:0 4px 0 #5c1000;text-shadow:1px 1px 0 #5c1000}
+.btn.primary::before{color:#fff}.btn.primary:hover{background:#ff4a1f}.btn.primary small{color:#ffd9cc;text-shadow:none}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* ---------- tipos (cores oficiais) ---------- */
+.type{display:inline-block;font-family:'PS2P';font-size:7px;color:#fff;padding:4px 6px 3px;border-radius:4px;text-shadow:1px 1px 0 rgba(0,0,0,.45);border:1px solid rgba(0,0,0,.3);vertical-align:middle;letter-spacing:.5px;text-transform:uppercase}
+.t-fire{background:#F08030}.t-water{background:#6890F0}.t-grass{background:#78C850}.t-electric{background:#F8D030;color:#3a3000;text-shadow:none}
+.t-normal{background:#A8A878}.t-poison{background:#A040A0}.t-rock{background:#B8A038}.t-psychic{background:#F85888}.t-ghost{background:#705898}
+.t-fighting{background:#C03028}.t-ground{background:#E0C068;color:#3a2e00;text-shadow:none}.t-bug{background:#A8B820}.t-flying{background:#A890F0}
+.t-ice{background:#98D8D8;color:#123;text-shadow:none}.t-dragon{background:#7038F8}
+
+/* ---------- faixas ---------- */
+.ribbon{display:block;width:max-content;max-width:100%;margin:0 auto;font-family:'PS2P';font-size:10px;color:#fff;padding:8px 14px;border-radius:6px;border:3px solid var(--k);box-shadow:0 3px 0 var(--k);text-shadow:1px 1px 0 rgba(0,0,0,.4);text-align:center}
+.ribbon.good{background:var(--ok)}.ribbon.bad{background:var(--red)}.ribbon.info{background:var(--blue)}
+.ribbon.gold{background:var(--yellow);color:#3a2a00;text-shadow:none}
+.ev-title{font-family:'PS2P';font-size:10px;text-align:center;margin:12px 0 0;line-height:1.7}
+
+/* ---------- Poké Bola ---------- */
+.pokeball{display:inline-block;width:84px;height:84px;border-radius:50%;background:linear-gradient(var(--red) 0 45%,var(--k) 45% 55%,#fff 55%);border:5px solid var(--k);position:relative;box-shadow:inset -7px -7px 0 rgba(0,0,0,.13)}
+.pokeball i{position:absolute;inset:0;margin:auto;width:28px;height:28px;border-radius:50%;background:#fff;border:5px solid var(--k)}
+.pokeball.sm{width:30px;height:30px;border-width:3px}.pokeball.sm i{width:11px;height:11px;border-width:3px}
+
+/* ---------- tela inicial ---------- */
+.scene.title{padding:0;background:var(--cream)}
+.title-sky{position:relative;height:360px;overflow:hidden;background:linear-gradient(#4FB0F2,#BDE8FF 70%,#E3F6FF)}
+.cloud{position:absolute;height:24px;background:#fff;border-radius:30px;opacity:.95;animation:drift 38s linear infinite}
+.cloud::before{content:'';position:absolute;width:44%;height:180%;left:18%;top:-70%;background:#fff;border-radius:50%}
+.c1{width:96px;top:34px;left:-120px}.c2{width:70px;top:112px;left:-90px;animation-duration:52s;animation-delay:-20s}.c3{width:120px;top:200px;left:-140px;animation-duration:64s;animation-delay:-40s}
+@keyframes drift{to{transform:translateX(760px)}}
+.logo{position:relative;z-index:2;text-align:center;padding-top:30px}
+.logo-main{font-family:'PS2P';font-size:32px;color:var(--yellow);letter-spacing:2px;transform:rotate(-3deg);text-shadow:3px 0 0 var(--blue),-3px 0 0 var(--blue),0 3px 0 var(--blue),0 -3px 0 var(--blue),3px 3px 0 var(--blue),-3px -3px 0 var(--blue),3px -3px 0 var(--blue),-3px 3px 0 var(--blue),6px 8px 0 var(--navy)}
+.logo-sub{font-family:'PS2P';font-size:11px;color:#fff;margin-top:18px;text-shadow:2px 2px 0 var(--navy),-1px -1px 0 var(--navy),1px -1px 0 var(--navy),-1px 1px 0 var(--navy)}
+.logo-ed{font-family:'PS2P';font-size:8px;color:var(--navy);margin-top:10px}
+.title-ball{position:absolute;left:50%;top:162px;width:62px;height:62px;margin-left:-31px;animation:wobble 2.6s ease-in-out infinite;z-index:1}
+.title-ball i{width:22px;height:22px;border-width:4px}
+@keyframes wobble{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg) translateY(-6px)}}
+.starters{position:absolute;bottom:26px;left:0;right:0;display:flex;justify-content:center;gap:18px;z-index:2}
+.t-spr{width:88px;height:88px;image-rendering:pixelated}
+.hop{animation:hop 1.8s ease-in-out infinite}
+@keyframes hop{0%,55%,100%{transform:translateY(0)}28%{transform:translateY(-16px)}}
+.grass{position:absolute;bottom:0;left:0;right:0;height:50px;background:repeating-linear-gradient(90deg,#5BBF4A 0 12px,#4CAD3C 12px 24px);border-top:4px solid #3a8a2b}
+.title-menu{padding:14px}
+.press{font-family:'PS2P';font-size:10px;text-align:center;color:var(--red);margin:4px 0 12px;animation:blink 1.2s steps(2) infinite}
+.rec-card{background:#fff;border:3px solid var(--frame);border-radius:10px;padding:10px 12px;margin-top:14px}
+.rec-h{font-family:'PS2P';font-size:8px;color:var(--frame);margin-bottom:8px}
+.rec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.rec-grid span{display:block;font-family:'PS2P';font-size:6px;color:#888;margin-bottom:5px}
+.rec-grid b{font-family:'PS2P';font-size:9px;color:var(--red)}
+.rec-empty{font-size:19px;color:#666}
+.foot{font-family:'PS2P';font-size:6px;color:#999;text-align:center;margin-top:12px;line-height:1.8}
+
+/* ---------- como jogar ---------- */
+.how{display:grid;gap:8px;margin-top:12px}
+.how-card{display:grid;grid-template-columns:42px 1fr;gap:8px;align-items:start;background:#fff;border:3px solid var(--frame);border-radius:10px;padding:8px 10px}
+.how-card .ic{font-size:28px;text-align:center}
+.how-card h4{font-family:'PS2P';font-size:8px;color:var(--red);margin-bottom:5px;line-height:1.5}
+.how-card p{font-size:19px}
+
+/* ---------- laboratório / escolha ---------- */
+.lab{display:flex;align-items:flex-end;justify-content:center;gap:16px;height:120px;background:linear-gradient(#e9e4cf,#d8d0b0);border:3px solid var(--k);border-radius:10px;margin-bottom:10px}
+.prof{font-size:66px;line-height:1}
+.lab-ball-row{display:flex;gap:8px;padding-bottom:14px}
+.starters-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.scard{background:#fff;border:3px solid var(--frame);border-radius:12px;padding:8px 4px 10px;text-align:center;cursor:pointer;box-shadow:0 4px 0 var(--frame);font:inherit;color:inherit;transition:transform .1s}
+.scard:hover,.scard:focus-visible{transform:translateY(-4px);background:#FFF6CC;outline:none}
+.scard img.big{width:96px;height:96px;image-rendering:pixelated}
+.scard .nm{font-family:'PS2P';font-size:8px;margin:2px 0 6px}
+.chain{display:flex;align-items:center;justify-content:center;margin:6px 0}
+.chain img{width:30px;height:30px;image-rendering:pixelated}.chain span{font-size:16px;color:#aaa}
+.vsb{font-family:'PS2P';font-size:6px;margin:4px 4px 0;padding:4px 2px;border-radius:4px;line-height:1.5}
+.vsb.adv{background:#d8f5da;color:#1f6a2e}.vsb.dis{background:#ffd9d0;color:#9e1b00}.vsb.neu{background:#eee;color:#555}
+
+/* ---------- líder / confronto ---------- */
+.leader{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;background:#fff;border:4px solid var(--k);border-radius:12px;padding:8px 10px;box-shadow:0 4px 0 var(--k);margin-top:10px}
+.avatar{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;font-size:32px;background:radial-gradient(circle at 35% 30%,#fff,#e2e2e2);border:3px solid var(--k)}
+.lc-top{font-family:'PS2P';font-size:6px;color:#888;line-height:1.6}
+.lc-name{font-family:'PS2P';font-size:13px;margin:5px 0 6px}
+.lc-sub{font-size:18px}
+.lc-badge{text-align:center;font-size:30px;line-height:1}
+.lc-badge small{display:block;font-family:'PS2P';font-size:6px;color:#888;margin-top:5px;line-height:1.6}
+.vsbox{background:var(--navy);color:#fff;border-radius:10px;padding:10px 12px;margin-top:12px;border:3px solid #0e1633}
+.vs-row{display:grid;grid-template-columns:86px 1fr 40px;align-items:center;gap:8px;font-family:'PS2P';font-size:7px;margin:5px 0}
+.vs-row b{color:#fff;text-align:right;font-size:9px}
+.bar{height:12px;background:#0e1633;border-radius:6px;overflow:hidden;border:2px solid #4a5b96}
+.bar i{display:block;height:100%;border-radius:4px}
+.bar .me{background:linear-gradient(90deg,#3BB54A,#8BE88F)}.bar .foe{background:linear-gradient(90deg,#E3350D,#FF8A66)}
+.chance{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-family:'PS2P';font-size:7px}
+.chance b{font-size:14px}.chance .good{color:#8BE88F}.chance .mid{color:#FFD84A}.chance .low{color:#FF8A66}
+.mtag{font-family:'PS2P';font-size:6px;padding:4px 6px;border-radius:4px;line-height:1.4}
+.mtag.adv{background:var(--ok)}.mtag.dis{background:var(--red)}.mtag.neu{background:#55608a}
+.pips{display:flex;align-items:center;gap:6px;margin:12px 0 2px;font-family:'PS2P';font-size:7px;color:#555;line-height:1.5}
+.mini-ball{width:20px;height:20px;border-radius:50%;flex:none;background:linear-gradient(var(--red) 0 44%,var(--k) 44% 56%,#fff 56%);border:2px solid var(--k);position:relative}
+.mini-ball::after{content:'';position:absolute;inset:0;margin:auto;width:5px;height:5px;border-radius:50%;background:#fff;border:2px solid var(--k)}
+.mini-ball.used{filter:grayscale(1);opacity:.3}
+
+/* ---------- time ---------- */
+.party-h{font-family:'PS2P';font-size:8px;color:var(--frame);margin:16px 0 8px;line-height:1.6}
+.party-h small{display:block;font-family:'VT323';font-size:17px;color:#777}
+.party{display:flex;flex-direction:column;gap:7px}
+.mon{display:grid;grid-template-columns:56px 1fr auto;align-items:center;gap:8px;background:linear-gradient(#E9F1FF,#CCDDF8);border:3px solid var(--frame);border-radius:10px;padding:3px 10px 5px 6px;position:relative}
+.mon.lead{background:linear-gradient(#FFE8DC,#F7C7B2);border-color:var(--red-d)}
+.mon.top::after{content:'TOP3';position:absolute;top:-8px;right:10px;font-family:'PS2P';font-size:6px;background:var(--yellow);color:#3a2a00;border:2px solid var(--k);border-radius:4px;padding:2px 4px}
+.mon.lost{opacity:.55;filter:grayscale(1);background:#e4e4e4}
+.mon .sp{width:56px;height:56px;display:grid;place-items:center}
+.mon .sp img{width:60px;height:60px;image-rendering:pixelated}
+.m-name{font-family:'PS2P';font-size:9px;line-height:1.5}
+.m-name .shiny{color:#d49b00}.m-name .star{color:var(--red)}
+.m-sub{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:3px}
+.m-lv{font-family:'PS2P';font-size:8px}
+.d{font-style:normal;font-family:'PS2P';font-size:7px;padding:2px 4px;border-radius:3px;animation:pop .5s}
+.d-up{color:#1f8a2e}.d-dn{color:var(--red)}.d-new{background:var(--ok);color:#fff}.d-evo{background:linear-gradient(90deg,#ff9a00,#ffd84a);color:#3a2000}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.25)}100%{transform:none;opacity:1}}
+.evobar{height:6px;background:#3a3a3a;border-radius:4px;overflow:hidden;margin-top:5px}
+.evobar i{display:block;height:100%;background:linear-gradient(90deg,#3fb8ff,#8fe6ff)}
+.evo-lbl{display:block;font-size:16px;color:#666;margin-top:1px}
+.m-pow{text-align:right;font-family:'PS2P';font-size:6px;color:#666}
+.m-pow b{display:block;font-size:12px;color:var(--blue);margin-top:3px}
+
+/* ---------- roleta ---------- */
+.wheel-wrap{position:relative;width:270px;height:270px;margin:14px auto 8px}
+.wheel{width:100%;height:100%;transform-origin:50% 50%;filter:drop-shadow(0 5px 0 rgba(0,0,0,.25))}
+.wheel-ptr{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:24px solid var(--k);z-index:3}
+.wheel-ptr::after{content:'';position:absolute;left:-9px;top:-21px;border-left:9px solid transparent;border-right:9px solid transparent;border-top:15px solid var(--yellow)}
+.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
+.wheel-hub .pokeball{width:52px;height:52px;border-width:4px}.wheel-hub .pokeball i{width:18px;height:18px;border-width:4px}
+.legend{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;font-family:'PS2P';font-size:7px}
+.lg.g{color:#2e9e3d}.lg.r{color:#d0401c}.lg.k{color:var(--red-d)}
+
+/* ---------- evento ---------- */
+.spot{display:grid;place-items:center;height:150px;position:relative;margin-top:6px}
+.spot::before{content:'';position:absolute;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,#fff 0 38%,rgba(255,255,255,0) 70%)}
+.spot img{width:136px;height:136px;image-rendering:pixelated;position:relative;animation:pop .6s}
+.spot .emo{font-size:70px;position:relative;animation:pop .6s}
+.spot.evo img{animation:evo 1.6s ease-out}
+@keyframes evo{0%,35%{filter:brightness(0) invert(1);transform:scale(.8)}60%{filter:brightness(0) invert(1);transform:scale(1.1)}100%{filter:none;transform:none}}
+.spot.shiny::after{content:'✨';position:absolute;top:8px;right:28%;font-size:30px;animation:blink .8s steps(2) infinite}
+
+/* ---------- batalha ---------- */
+.scene.battle{padding:0;background:linear-gradient(#A8E6A3 0 56%,#E7DCA0 56%)}
+.field{position:relative;height:270px}
+.plat{position:absolute;border-radius:50%;background:radial-gradient(#e2f5c8,#9fd07c);border:2px solid #7fb05e}
+.plat.f{width:160px;height:34px;right:24px;top:118px}.plat.m{width:190px;height:38px;left:10px;bottom:14px}
+.foe-av{position:absolute;right:52px;top:26px;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;font-size:58px;background:radial-gradient(circle at 35% 30%,#fff,#e6e6e6);border:4px solid var(--k);z-index:1}
+.me-av{position:absolute;left:28px;bottom:20px;transform:translateX(-170%);transition:transform .5s ease-out;z-index:1}
+.me-av.enter{transform:none}
+.back-img{width:160px;height:160px;image-rendering:pixelated;display:block}
+.hpbox{position:absolute;background:var(--cream);border:3px solid var(--k);border-radius:8px 8px 8px 22px;padding:7px 10px;width:226px;box-shadow:4px 4px 0 rgba(0,0,0,.25);z-index:2}
+.hpbox.foe{left:12px;top:14px}.hpbox.me{right:12px;bottom:56px;border-radius:8px 8px 22px 8px}
+.hp-name{font-family:'PS2P';font-size:9px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.hpbar{display:flex;align-items:center;gap:5px;background:#3a3a3a;border-radius:6px;padding:2px 5px;margin:7px 0 4px}
+.hpbar>span{font-family:'PS2P';font-size:6px;color:var(--yellow)}
+.track{flex:1;height:7px;background:#6b6b6b;border-radius:4px;overflow:hidden}
+.track i{display:block;height:100%;width:100%;background:#58D080;transition:width 1.2s ease-in,background .3s}
+.hp-num{font-family:'PS2P';font-size:7px;text-align:right;color:#555}
+.scene.battle .dialog,.scene.battle .menu{margin:0 12px 12px}
+.shake{animation:shake .45s}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.faint{animation:faint .7s forwards!important}
+@keyframes faint{to{transform:translateY(60px);opacity:0}}
+
+/* ---------- vitória / liga ---------- */
+.badge-pop{font-size:76px;text-align:center;margin:8px 0 10px;animation:badge 1s ease-out;filter:drop-shadow(0 0 12px #ffd84a)}
+@keyframes badge{0%{transform:scale(0) rotate(-180deg)}70%{transform:scale(1.25) rotate(10deg)}100%{transform:none}}
+.reward-line{font-family:'PS2P';font-size:7px;text-align:center;color:#1f8a2e;line-height:1.7}
+.e4-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:12px}
+.e4{background:#fff;border:3px solid var(--k);border-radius:8px;text-align:center;padding:5px 2px}
+.e4 span{font-size:24px;display:block}.e4 small{font-family:'PS2P';font-size:5px;display:block;margin-top:4px;line-height:1.5}
+.e4.beaten{background:#ddd;opacity:.55}.e4.beaten span{filter:grayscale(1)}
+.e4.now{background:var(--yellow);transform:translateY(-3px)}
+
+/* ---------- hall da fama / fim ---------- */
+.scene.hof{background:radial-gradient(circle at 50% 12%,#fffbe0,#ffe27a 55%,#f0b400)}
+.hof-title{font-family:'PS2P';font-size:20px;text-align:center;color:#fff;margin:8px 0 12px;text-shadow:2px 2px 0 #b07800,-2px -2px 0 #b07800,2px -2px 0 #b07800,-2px 2px 0 #b07800,4px 5px 0 #6a4600}
+.hof-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.hof-slot{background:#fff;border:3px solid var(--k);border-radius:10px;text-align:center;padding:4px 2px 8px;box-shadow:0 3px 0 var(--k)}
+.hof-img{width:72px;height:72px;image-rendering:pixelated}
+.conf{position:absolute;top:-12px;width:8px;height:12px;z-index:0;animation:fall 3.2s linear 3}
+@keyframes fall{to{transform:translateY(720px) rotate(540deg)}}
+.scene.over{background:linear-gradient(#20203a,#11111f)}
+.over-title{font-family:'PS2P';font-size:20px;text-align:center;color:var(--red);margin:18px 0 10px;text-shadow:3px 3px 0 #000}
+.newrec{font-family:'PS2P';font-size:11px;text-align:center;color:var(--yellow);background:var(--k);border-radius:8px;padding:10px;margin-top:10px;animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.05)}}
+.tcard{background:linear-gradient(135deg,#FFEDB0,#F5C84A);border:4px solid var(--k);border-radius:12px;padding:10px 12px;margin-top:12px;box-shadow:0 4px 0 var(--k);color:var(--ink)}
+.tc-head{font-family:'PS2P';font-size:8px;display:flex;justify-content:space-between;gap:8px}
+.tc-badges{display:flex;gap:4px;justify-content:center;margin:9px 0;background:rgba(0,0,0,.12);padding:6px;border-radius:8px}
+.tc-grid{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:19px}
+.tc-grid b{color:var(--red-d);text-align:right}
+.tc-team{display:flex;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.tc-img{width:52px;height:52px;image-rendering:pixelated}
+.log{background:#fff;border:3px solid var(--frame);border-radius:10px;margin-top:12px;max-height:230px;overflow:auto;padding:0 10px 6px;color:var(--ink)}
+.log-h{font-family:'PS2P';font-size:8px;color:var(--frame);position:sticky;top:0;background:#fff;padding:9px 0 7px}
+.log-row{display:grid;grid-template-columns:50px 24px 1fr;gap:6px;font-size:18px;padding:3px 0;border-top:1px dashed #ddd}
+.log-row .d{font-family:'PS2P';font-size:6px;color:#999;padding-top:5px;animation:none}
+.log-row.bad{color:#b02000}.log-row.gym{color:#8a6a00}.log-row.evo{color:#a35a00}.log-row.catch{color:#1f6a9e}
+.emo{display:inline-block}
+
+@media (max-width:440px){.logo-main{font-size:25px}.t-spr{width:72px;height:72px}.hpbox{width:190px}.back-img{width:130px;height:130px}.foe-av{width:88px;height:88px;font-size:48px;right:30px}.rec-grid{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

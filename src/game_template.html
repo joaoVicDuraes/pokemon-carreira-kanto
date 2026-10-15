@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carreira: Treinador Pokémon (Gen 1)</title>
+<style>
+  :root{
+    --bg:#0f1420; --text:#e8edf5; --card:#1a2234; --card-fg:#e8edf5;
+    --border:#2c3850; --accent:#ffcc33; --muted:#8b96ab;
+    --ok:#4ade80; --warn:#fbbf24; --danger:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.5;padding:16px;max-width:720px;margin:0 auto}
+  h1{font-size:1.4rem;margin-bottom:4px;color:var(--accent)}
+  .sub{color:var(--muted);font-size:.82rem;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px}
+  .scene-text{font-size:.95rem;margin-bottom:14px;white-space:pre-wrap}
+  .choices{display:flex;flex-direction:column;gap:8px}
+  button{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:11px 14px;font-size:.92rem;cursor:pointer;text-align:left;transition:all .12s;font-family:inherit}
+  button:hover:not(:disabled){border-color:var(--accent);background:#222c42}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);color:#1a1200;font-weight:600;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(1.08)}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .stat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:.78rem;flex:1;min-width:66px;text-align:center}
+  .stat b{display:block;font-size:1.05rem;color:var(--accent)}
+  .stat .lbl{color:var(--muted);font-size:.65rem;text-transform:uppercase;letter-spacing:.5px}
+  .badges{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 12px}
+  .badge{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;border:2px solid var(--border);background:var(--bg);opacity:.3}
+  .badge.won{opacity:1;border-color:var(--accent);box-shadow:0 0 7px rgba(255,204,51,.4)}
+  .step-pips{display:flex;gap:6px;margin:4px 0 12px;align-items:center}
+  .pip{width:11px;height:11px;border-radius:50%;background:var(--bg);border:1px solid var(--border)}
+  .pip.done{background:var(--accent);border-color:var(--accent)}
+  .pip-lbl{font-size:.72rem;color:var(--muted);margin-left:4px}
+  .team{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+  .mon{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+  .sprite{width:52px;height:52px;flex:none;display:flex;align-items:center;justify-content:center;font-size:1.6rem;background:var(--card);border-radius:8px;border:1px solid var(--border);overflow:hidden}
+  .sprite img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+  .mon .info{flex:1;min-width:0}
+  .mon .nm{font-weight:600;font-size:.9rem}
+  .mon .meta{font-size:.72rem;color:var(--muted)}
+  .mon.new{border-color:var(--ok);box-shadow:0 0 7px rgba(74,222,128,.3)}
+  .tag{display:inline-block;font-size:.68rem;padding:2px 7px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);margin-left:4px}
+  .type-fire{color:#ff7043}.type-water{color:#4fc3f7}.type-grass{color:#81c784}
+  .type-electric{color:#ffd54f}.type-normal{color:#bdbdbd}.type-poison{color:#ba68c8}
+  .type-rock{color:#bcaaa4}.type-psychic{color:#f06292}.type-ghost{color:#9575cd}
+  .type-fighting{color:#e57373}.type-ground{color:#d7ccc8}.type-bug{color:#aed581}
+  .type-flying{color:#90caf9}.type-ice{color:#80deea}.type-dragon{color:#9575cd}
+  .center{text-align:center}
+  .big{font-size:2rem;margin:8px 0}
+  .bigsprite{width:96px;height:96px;margin:4px auto;image-rendering:pixelated}
+  .reward{color:var(--ok);font-weight:600}
+  .bad{color:var(--danger);font-weight:600}
+  .fade{animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+  .vs{display:flex;align-items:center;gap:10px;justify-content:center;font-size:.85rem;margin:6px 0}
+  .powerbar{height:9px;border-radius:5px;background:var(--bg);border:1px solid var(--border);overflow:hidden;margin:3px 0 10px}
+  .powerbar>div{height:100%;border-radius:5px;transition:width .6s}
+  .wheel-wrap{position:relative;width:260px;height:260px;margin:10px auto 16px}
+  .wheel{width:100%;height:100%;transform-origin:50% 50%}
+  .wheel-ptr{position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:20px solid var(--accent);z-index:3;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+  .wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:50%;background:var(--card);border:3px solid var(--accent);z-index:2;display:flex;align-items:center;justify-content:center;font-size:1rem}
+  @media(prefers-reduced-motion:reduce){.fade{animation:none}.wheel{transition:none!important}.powerbar>div{transition:none}}
+</style>
+</head>
+<body>
+<h1>⚡ Carreira de Treinador — Kanto</h1>
+<div class="sub">Só Gen 1. 3 decisões por ginásio. Perdeu pro líder? Fim da carreira.</div>
+<div class="stats" id="stats"></div>
+<div class="badges" id="badges"></div>
+<div class="card fade" id="scene"></div>
+
+<script>
+"use strict";
+/* sprites injetados pelo build (species -> data URI) */
+const SPRITES = __SPRITES__;
+function spriteBig(species){const u=SPRITES[species];return u?`<img class="bigsprite" src="${u}" alt="${species}">`:"";}
+function spriteHTML(m){const u=SPRITES[m.species];return u?`<span class="sprite"><img src="${u}" alt="${m.species}"></span>`:`<span class="sprite">${m.e}</span>`;}
+
+const DEX = {
+  Bulbasaur:{t:"grass",e:"🌱",base:9,evo:"Ivysaur",evoLv:16},
+  Ivysaur:{t:"grass",e:"🌿",base:14,evo:"Venusaur",evoLv:32},
+  Venusaur:{t:"grass",e:"🌳",base:21,evo:null},
+  Charmander:{t:"fire",e:"🦎",base:9,evo:"Charmeleon",evoLv:16},
+  Charmeleon:{t:"fire",e:"🔥",base:14,evo:"Charizard",evoLv:36},
+  Charizard:{t:"fire",e:"🐉",base:23,evo:null},
+  Squirtle:{t:"water",e:"🐢",base:9,evo:"Wartortle",evoLv:16},
+  Wartortle:{t:"water",e:"💧",base:14,evo:"Blastoise",evoLv:36},
+  Blastoise:{t:"water",e:"🌊",base:22,evo:null},
+  Pidgey:{t:"flying",e:"🐦",base:6,evo:"Pidgeotto",evoLv:18},
+  Pidgeotto:{t:"flying",e:"🕊️",base:11,evo:"Pidgeot",evoLv:36},
+  Pidgeot:{t:"flying",e:"🦅",base:19,evo:null},
+  Rattata:{t:"normal",e:"🐀",base:5,evo:"Raticate",evoLv:20},
+  Raticate:{t:"normal",e:"🐁",base:12,evo:null},
+  Caterpie:{t:"bug",e:"🐛",base:4,evo:"Metapod",evoLv:7},
+  Metapod:{t:"bug",e:"🟢",base:6,evo:"Butterfree",evoLv:10},
+  Butterfree:{t:"bug",e:"🦋",base:14,evo:null},
+  Pikachu:{t:"electric",e:"🐭",base:10,evo:"Raichu",evoLv:99},
+  Raichu:{t:"electric",e:"⚡",base:18,evo:null},
+  Geodude:{t:"rock",e:"🪨",base:8,evo:"Graveler",evoLv:25},
+  Graveler:{t:"rock",e:"⛰️",base:14,evo:"Golem",evoLv:99},
+  Golem:{t:"rock",e:"🗿",base:21,evo:null},
+  Machop:{t:"fighting",e:"💪",base:9,evo:"Machoke",evoLv:28},
+  Machoke:{t:"fighting",e:"🥊",base:15,evo:"Machamp",evoLv:99},
+  Machamp:{t:"fighting",e:"🦾",base:22,evo:null},
+  Abra:{t:"psychic",e:"🌀",base:7,evo:"Kadabra",evoLv:16},
+  Kadabra:{t:"psychic",e:"🥄",base:14,evo:"Alakazam",evoLv:99},
+  Alakazam:{t:"psychic",e:"🔮",base:23,evo:null},
+  Gastly:{t:"ghost",e:"👻",base:7,evo:"Haunter",evoLv:25},
+  Haunter:{t:"ghost",e:"💜",base:14,evo:"Gengar",evoLv:99},
+  Gengar:{t:"ghost",e:"😈",base:22,evo:null},
+  Magikarp:{t:"water",e:"🐟",base:1,evo:"Gyarados",evoLv:20},
+  Gyarados:{t:"water",e:"🐲",base:24,evo:null},
+  Eevee:{t:"normal",e:"🦊",base:9,evo:null},
+  Growlithe:{t:"fire",e:"🐕",base:11,evo:"Arcanine",evoLv:99},
+  Arcanine:{t:"fire",e:"🔥",base:23,evo:null},
+  Dratini:{t:"dragon",e:"🐉",base:9,evo:"Dragonair",evoLv:30},
+  Dragonair:{t:"dragon",e:"🐍",base:15,evo:"Dragonite",evoLv:55},
+  Dragonite:{t:"dragon",e:"🐲",base:27,evo:null},
+  Snorlax:{t:"normal",e:"😴",base:20,evo:null},
+  Lapras:{t:"water",e:"🦕",base:21,evo:null},
+  Sandshrew:{t:"ground",e:"🏜️",base:7,evo:"Sandslash",evoLv:22},
+  Sandslash:{t:"ground",e:"🦔",base:16,evo:null},
+  Nidoran:{t:"poison",e:"🐰",base:7,evo:"Nidorino",evoLv:16},
+  Nidorino:{t:"poison",e:"🦏",base:14,evo:null},
+  Vulpix:{t:"fire",e:"🦊",base:9,evo:"Ninetales",evoLv:99},
+  Ninetales:{t:"fire",e:"🔥",base:20,evo:null},
+  Jigglypuff:{t:"normal",e:"🎈",base:7,evo:null},
+  Oddish:{t:"grass",e:"🌿",base:7,evo:"Gloom",evoLv:21},
+  Gloom:{t:"grass",e:"🌺",base:14,evo:null},
+  Zubat:{t:"poison",e:"🦇",base:6,evo:"Golbat",evoLv:22},
+  Golbat:{t:"poison",e:"🧛",base:15,evo:null},
+  Meowth:{t:"normal",e:"🐈",base:7,evo:"Persian",evoLv:28},
+  Persian:{t:"normal",e:"🐆",base:15,evo:null},
+  Psyduck:{t:"water",e:"🦆",base:8,evo:"Golduck",evoLv:33},
+  Golduck:{t:"water",e:"🦢",base:18,evo:null},
+  Mankey:{t:"fighting",e:"🐒",base:8,evo:"Primeape",evoLv:28},
+  Primeape:{t:"fighting",e:"🦍",base:16,evo:null},
+  Poliwag:{t:"water",e:"🌀",base:6,evo:"Poliwhirl",evoLv:25},
+  Poliwhirl:{t:"water",e:"💧",base:14,evo:null},
+  Bellsprout:{t:"grass",e:"🌱",base:7,evo:"Weepinbell",evoLv:21},
+  Weepinbell:{t:"grass",e:"🪴",base:14,evo:null},
+  Ponyta:{t:"fire",e:"🐎",base:11,evo:"Rapidash",evoLv:40},
+  Rapidash:{t:"fire",e:"🔥",base:20,evo:null},
+  Magnemite:{t:"electric",e:"🧲",base:9,evo:"Magneton",evoLv:30},
+  Magneton:{t:"electric",e:"⚡",base:17,evo:null},
+  Doduo:{t:"flying",e:"🐦",base:8,evo:"Dodrio",evoLv:31},
+  Dodrio:{t:"flying",e:"🦃",base:16,evo:null},
+  Krabby:{t:"water",e:"🦀",base:8,evo:"Kingler",evoLv:28},
+  Kingler:{t:"water",e:"🦞",base:18,evo:null},
+  Voltorb:{t:"electric",e:"⚪",base:8,evo:null},
+  Cubone:{t:"ground",e:"🦴",base:8,evo:"Marowak",evoLv:28},
+  Marowak:{t:"ground",e:"💀",base:16,evo:null},
+  Rhyhorn:{t:"ground",e:"🦏",base:10,evo:"Rhydon",evoLv:42},
+  Rhydon:{t:"ground",e:"🦣",base:21,evo:null},
+  Horsea:{t:"water",e:"🌊",base:7,evo:"Seadra",evoLv:32},
+  Seadra:{t:"water",e:"🐉",base:15,evo:null},
+  Staryu:{t:"water",e:"⭐",base:8,evo:"Starmie",evoLv:99},
+  Starmie:{t:"psychic",e:"🌟",base:20,evo:null},
+  Scyther:{t:"bug",e:"🗡️",base:18,evo:null},
+  Pinsir:{t:"bug",e:"🪲",base:18,evo:null},
+  Tauros:{t:"normal",e:"🐂",base:18,evo:null},
+  Diglett:{t:"ground",e:"🕳️",base:6,evo:"Dugtrio",evoLv:26},
+  Dugtrio:{t:"ground",e:"⛏️",base:15,evo:null},
+  Weedle:{t:"bug",e:"🐛",base:4,evo:"Kakuna",evoLv:7},
+  Kakuna:{t:"bug",e:"🟡",base:6,evo:"Beedrill",evoLv:10},
+  Beedrill:{t:"bug",e:"🐝",base:14,evo:null},
+  Clefairy:{t:"normal",e:"🧚",base:9,evo:"Clefable",evoLv:99},
+  Clefable:{t:"normal",e:"🌟",base:19,evo:null},
+  Spearow:{t:"flying",e:"🐦",base:6,evo:"Fearow",evoLv:20},
+  Fearow:{t:"flying",e:"🦅",base:15,evo:null},
+  Drowzee:{t:"psychic",e:"😴",base:8,evo:"Hypno",evoLv:26},
+  Hypno:{t:"psychic",e:"🌀",base:18,evo:null},
+  Hitmonlee:{t:"fighting",e:"🦵",base:19,evo:null},
+  Hitmonchan:{t:"fighting",e:"🥊",base:19,evo:null},
+  Kangaskhan:{t:"normal",e:"🦘",base:21,evo:null},
+  Chansey:{t:"normal",e:"🥚",base:16,evo:null},
+  Tangela:{t:"grass",e:"🌿",base:16,evo:null},
+  Lickitung:{t:"normal",e:"👅",base:16,evo:null},
+  Porygon:{t:"normal",e:"🔷",base:18,evo:null},
+  Electabuzz:{t:"electric",e:"⚡",base:21,evo:null},
+  Jolteon:{t:"electric",e:"⚡",base:22,evo:null},
+  Vaporeon:{t:"water",e:"💧",base:22,evo:null},
+  Flareon:{t:"fire",e:"🔥",base:22,evo:null},
+  Seel:{t:"water",e:"🦭",base:8,evo:"Dewgong",evoLv:34},
+  Dewgong:{t:"ice",e:"❄️",base:18,evo:null},
+  Grimer:{t:"poison",e:"🟣",base:9,evo:"Muk",evoLv:38},
+  Muk:{t:"poison",e:"☠️",base:19,evo:null},
+  Onix:{t:"rock",e:"🪨",base:14,evo:null},
+  Jynx:{t:"ice",e:"💋",base:19,evo:null},
+  Omanyte:{t:"rock",e:"🐚",base:10,evo:"Omastar",evoLv:40},
+  Omastar:{t:"rock",e:"🦑",base:22,evo:null},
+  Kabuto:{t:"rock",e:"🦀",base:10,evo:"Kabutops",evoLv:40},
+  Kabutops:{t:"rock",e:"⚔️",base:22,evo:null},
+  Aerodactyl:{t:"flying",e:"🦅",base:24,evo:null},
+  Articuno:{t:"ice",e:"🧊",base:30,evo:null},
+  Zapdos:{t:"electric",e:"🌩️",base:30,evo:null},
+  Moltres:{t:"fire",e:"🔥",base:30,evo:null},
+  Mewtwo:{t:"psychic",e:"🧬",base:38,evo:null},
+};
+const STARTERS=["Bulbasaur","Charmander","Squirtle"];
+const WILD_POOL=["Pidgey","Rattata","Caterpie","Pikachu","Geodude","Machop","Abra","Gastly","Magikarp","Eevee","Growlithe","Dratini","Sandshrew","Nidoran","Vulpix","Jigglypuff","Oddish","Zubat","Meowth","Psyduck","Mankey","Poliwag","Bellsprout","Ponyta","Magnemite","Doduo","Krabby","Voltorb","Cubone","Rhyhorn","Horsea","Staryu","Scyther","Pinsir","Tauros","Diglett"];
+
+/* Efetividade (Gen 1 simplificada): o que CADA tipo faz contra o tipo do líder.
+   >1 super eficaz, <1 pouco eficaz. Só os matchups relevantes; o resto = 1 (neutro). */
+const TYPE_CHART = {
+  fire:    {grass:2, ice:2, bug:2, water:.5, rock:.5, fire:.5, dragon:.5},
+  water:   {fire:2, ground:2, rock:2, water:.5, grass:.5, dragon:.5},
+  grass:   {water:2, ground:2, rock:2, fire:.5, grass:.5, poison:.5, flying:.5, bug:.5, dragon:.5},
+  electric:{water:2, flying:2, electric:.5, grass:.5, dragon:.5, ground:0},
+  ice:     {grass:2, ground:2, flying:2, dragon:2, water:.5, ice:.5, fire:.5},
+  fighting:{normal:2, rock:2, ice:2, poison:.5, flying:.5, psychic:.5, bug:.5, ghost:0},
+  poison:  {grass:2, bug:2, poison:.5, ground:.5, rock:.5, ghost:.5},
+  ground:  {fire:2, electric:2, poison:2, rock:2, grass:.5, bug:.5, flying:0},
+  flying:  {grass:2, fighting:2, bug:2, electric:.5, rock:.5},
+  psychic: {fighting:2, poison:2, psychic:.5},
+  bug:     {grass:2, psychic:2, poison:2, fire:.5, fighting:.5, flying:.5, ghost:.5},
+  rock:    {fire:2, ice:2, flying:2, bug:2, fighting:.5, ground:.5},
+  ghost:   {ghost:2, psychic:2, normal:0},
+  dragon:  {dragon:2},
+  normal:  {rock:.5, ghost:0},
+};
+function typeMult(atk,def){const row=TYPE_CHART[atk];if(!row)return 1;const v=row[def];return v===undefined?1:v;}
+/* melhor efetividade do time contra o tipo do líder (usa os 3 pokémon mais fortes) */
+function bestMatchup(leaderType){
+  if(!G.team.length)return 1;
+  const top=G.team.slice().sort((a,b)=>monPower(b)-monPower(a)).slice(0,3);
+  let best=0;top.forEach(m=>{const v=typeMult(m.t,leaderType);if(v>best)best=v;});
+  return best||1;
+}
+const GYMS=[
+  {n:1,leader:"Brock",t:"rock",e:"🪨",b:"🥌",power:30},
+  {n:2,leader:"Misty",t:"water",e:"💧",b:"💧",power:48},
+  {n:3,leader:"Lt. Surge",t:"electric",e:"⚡",b:"⚡",power:68},
+  {n:4,leader:"Erika",t:"grass",e:"🌸",b:"🌈",power:90},
+  {n:5,leader:"Koga",t:"poison",e:"☠️",b:"🕸️",power:114},
+  {n:6,leader:"Sabrina",t:"psychic",e:"🔮",b:"🧠",power:140},
+  {n:7,leader:"Blaine",t:"fire",e:"🌋",b:"🔥",power:168},
+  {n:8,leader:"Giovanni",t:"ground",e:"👑",b:"🏆",power:198},
+];
+const ELITE=[
+  {leader:"Lorelei",t:"ice",e:"❄️",power:230},
+  {leader:"Bruno",t:"fighting",e:"🥋",power:262},
+  {leader:"Agatha",t:"ghost",e:"👻",power:296},
+  {leader:"Lance",t:"dragon",e:"🐉",power:332},
+  {leader:"Rival (Champion)",t:"dragon",e:"👑",power:370},
+];
+const STEPS_PER_GYM=3;
+
+let G=null;
+function newGame(){return{phase:"intro",team:[],gymIndex:0,eliteIndex:0,step:0,day:1,lastResult:null,stats:{caught:0,evolved:0,wins:0,eventsGood:0,eventsBad:0,stolen:0,fled:0}};}
+function mon(species,lv){const d=DEX[species];return{species,lv:lv||5,t:d.t,e:d.e};}
+function monPower(m){const d=DEX[m.species];return Math.round(d.base+(m.lv-5)*1.6);}
+function teamPower(){return G.team.map(monPower).sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0);}
+
+const $scene=document.getElementById("scene"),$stats=document.getElementById("stats"),$badges=document.getElementById("badges");
+function renderStats(){
+  if(G.phase==="intro"||G.phase==="pick"){$stats.innerHTML="";$badges.innerHTML="";return;}
+  $stats.innerHTML=`<div class="stat"><span class="lbl">Poder</span><b>${teamPower()}</b></div><div class="stat"><span class="lbl">Time</span><b>${G.team.length}/6</b></div><div class="stat"><span class="lbl">Dia</span><b>${G.day}</b></div>`;
+  $badges.innerHTML=GYMS.map((g,i)=>`<div class="badge ${i<G.gymIndex?'won':''}" title="${g.leader}">${g.b}</div>`).join("");
+}
+function scene(h){$scene.classList.remove("fade");void $scene.offsetWidth;$scene.classList.add("fade");$scene.innerHTML=h;renderStats();}
+function choices(a){return`<div class="choices">`+a.map(c=>`<button class="${c.cls||''}" ${c.ds?'disabled':''} onclick="act('${c.id}')">${c.l}</button>`).join("")+`</div>`;}
+function stepPips(){if(G.gymIndex>=GYMS.length)return"";let h='<div class="step-pips">';for(let i=0;i<STEPS_PER_GYM;i++)h+=`<span class="pip ${i<G.step?'done':''}"></span>`;h+=`<span class="pip-lbl">${G.step}/${STEPS_PER_GYM} decisões antes de ${GYMS[G.gymIndex].leader}</span></div>`;return h;}
+function teamHTML(highlight){
+  if(!G.team.length)return"";
+  return`<div class="team">`+G.team.map(m=>{const d=DEX[m.species];const evoSoon=d.evo&&d.evoLv<99&&m.lv>=d.evoLv-4&&m.lv<d.evoLv;
+    return`<div class="mon ${highlight===m?'new':''}">${spriteHTML(m)}<div class="info"><span class="nm">${m.species}</span> <span class="tag type-${m.t}">${m.t}</span><div class="meta">Lv ${m.lv} · Poder ${monPower(m)}${evoSoon?' · <span style="color:var(--warn)">quase evoluindo</span>':''}</div></div></div>`;
+  }).join("")+`</div>`;
+}
+
+function render(){
+  renderStats();const p=G.phase;
+  if(p==="intro")return intro();
+  if(p==="pick")return pick();
+  if(p==="hub")return hub();
+  if(p==="roulette")return rouletteScreen();
+  if(p==="event")return eventResult();
+  if(p==="gymresult")return gymResult();
+  if(p==="elite")return eliteScreen();
+  if(p==="eliteresult")return eliteResult();
+  if(p==="champion")return champion();
+  if(p==="gameover")return gameOver();
+}
+function intro(){scene(`<div class="scene-text">Pallet Town. Você tem 11 anos e um sonho grande demais: as 8 insígnias e a Elite Four.
+
+A regra da estrada é dura — <b>3 decisões</b> entre você e cada líder de ginásio. Escolha bem: capturar, treinar ou arriscar. E cuidado, porque <span class="bad">perder para um líder encerra a carreira</span>. Não há segunda chance; só recomeçar do zero.</div>`+choices([{id:"go",l:"🚪 Ir ao laboratório do Prof. Carvalho",cls:"primary"}]));}
+function pick(){scene(`<div class="scene-text">Três Poké Bolas sobre a mesa. Escolha seu parceiro de Kanto.</div>`+`<div class="choices">`+STARTERS.map(s=>{const d=DEX[s];return`<button onclick="choose('${s}')">${SPRITES[s]?`<img src="${SPRITES[s]}" style="width:40px;height:40px;vertical-align:middle;image-rendering:pixelated">`:''} <b class="type-${d.t}">${s}</b> <span class="tag type-${d.t}">${d.t}</span><br><span style="color:var(--muted);font-size:.78rem">Evolui em ${d.evo} → ${DEX[d.evo].evo||'(final)'}</span></button>`;}).join("")+`</div>`);}
+window.choose=function(s){G.team.push(mon(s,5));G.phase="hub";render();};
+function nextTarget(){if(G.gymIndex<GYMS.length)return{kind:"gym",data:GYMS[G.gymIndex]};return{kind:"elite",data:ELITE[G.eliteIndex]};}
+function hub(){
+  const tgt=nextTarget();if(tgt.kind==="elite"){G.phase="elite";return render();}
+  const g=tgt.data;const can=G.step>=STEPS_PER_GYM;
+  scene(`<div class="scene-text">🗺️ <b>A caminho do Ginásio ${g.n}</b> — ${g.e} ${g.leader} <span class="tag type-${g.t}">${g.t}</span> · poder ${g.power}
+Seu poder: <b>${teamPower()}</b>${(function(){const mu=bestMatchup(g.t);if(mu>1)return ' · <span style="color:var(--ok)">vantagem de tipo ✓</span>';if(mu<1)return ' · <span style="color:var(--danger)">desvantagem de tipo ✗</span>';return '';})()}</div>`
+  +stepPips()
+  +(can?`<div class="scene-text">Suas 3 decisões acabaram. Hora de encarar <b>${g.leader}</b>.
+${teamPower()<g.power?'<span class="bad">Você está mais fraco que o líder — vai ser arriscado.</span>':'<span class="reward">Seu time parece pronto.</span>'}</div>`
+      :`<div class="scene-text">Faltam <b>${STEPS_PER_GYM-G.step}</b> decisão(ões). O que faz?</div>`)
+  +teamHTML()
+  +(can?choices([{id:"challenge",l:`⚔️ Desafiar ${g.leader}`,cls:"primary"}])
+      :choices([{id:"roll",l:"🎲 Rodar a roleta da estrada (evento aleatório)",cls:"primary"},{id:"train",l:"🏋️ Treinar firme (+4 níveis no time, garantido)"},{id:"search",l:"🔎 Procurar na grama (captura garantida)",ds:G.team.length>=6}])));
+}
+function doTrain(){const gain=2;G.team.forEach(m=>{m.lv+=gain;tryEvolveSilent(m);});G.step++;G.day++;G.stats.eventsGood++;G.lastResult={emoji:"🏋️",title:"Treino puxado",good:true,text:`Um dia inteiro de treino. <span class="reward">Todo o time subiu ${gain} níveis.</span> A opção segura — a roleta rende mais na média, mas pode te punir.`,highlight:null};G.phase="event";render();}
+/* ============ EVENTOS POR GINÁSIO ============
+   Cada ginásio tem eventos GREEN (bons) e RED (ruins), temáticos.
+   Cada evento é {ic, lb, fn} onde fn(G) aplica o efeito e retorna {title,text,highlight}.
+   A proporção verde/vermelho por fase é controlada em greenRatio(). */
+
+/* helpers de efeito ------------------------------------------------ */
+function addMon(species,lv){const m=mon(species,lv);
+  // capturas entram fortes: ao menos ~85% do nível do seu melhor, para contarem no poder
+  if(G.team.length){const s=G.team.slice().sort((a,b)=>b.lv-a.lv)[0];const floor=Math.round(s.lv*0.85);if(m.lv<floor)m.lv=floor;tryEvolveSilent(m);}
+  G.team.push(m);G.stats.caught++;return m;}
+function lvlAll(n){const g=n+3;G.team.forEach(m=>{m.lv+=g;tryEvolveSilent(m);});}
+function lvlOne(m,n){m.lv+=n*2+2;tryEvolveSilent(m);return m;}
+function dropLvOne(m,n){m.lv=Math.max(5,m.lv-Math.max(1,Math.round(n*0.7)));return m;}
+function dropLvAll(n){const d=Math.max(1,Math.round(n*0.7));G.team.forEach(m=>{m.lv=Math.max(5,m.lv-d);});}
+function randMember(excludeStarter){const pool=excludeStarter?G.team.slice(1):G.team.slice();return pool.length?pool[Math.floor(Math.random()*pool.length)]:null;}
+function strongest(){return G.team.slice().sort((a,b)=>monPower(b)-monPower(a))[0];}
+function weakestNonStarter(){const pool=G.team.slice(1);if(!pool.length)return null;return pool.sort((a,b)=>monPower(a)-monPower(b))[0];}
+/* rouba/perde um pokémon; se era o último -> game over da Rocket */
+function stealOne(excludeStarter){
+  if(G.team.length<=1){G.pendingRocketGameOver=true;G.stats.stolen++;return null;}
+  let idx;
+  if(excludeStarter){idx=1+Math.floor(Math.random()*(G.team.length-1));}
+  else{idx=Math.floor(Math.random()*G.team.length);}
+  const st=G.team.splice(idx,1)[0];G.stats.stolen++;return st;
+}
+function loseWeakest(){
+  const w=weakestNonStarter();
+  if(!w){G.pendingRocketGameOver=true;return null;}
+  const i=G.team.indexOf(w);G.team.splice(i,1);G.stats.fled++;return w;
+}
+function freeSlot(){return G.team.length<6;}
+
+/* catálogo de eventos por ginásio (índice 0..7) -------------------- */
+const GYM_EVENTS=[
+  /* 0 — Brock (Pedra) ------------------------------------------- */
+  {
+    green:[
+      {ic:"🐭",lb:"Pikachu raro",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Pikachu",10);return{title:"Surpresa na Floresta de Viridian",text:`Entre as árvores, um <b>Pikachu</b> raro (Lv ${m.lv})! Captura imediata — ótimo contra os próximos desafios.`,highlight:m};}},
+      {ic:"💪",lb:"Reforço R22",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.5?"Mankey":"Nidoran";const m=addMon(s,10);return{title:"Reforço na Rota 22",text:`Um <b>${s}</b> selvagem (Lv ${m.lv}) desafia seu inicial e decide entrar pro time — vantagem direta contra o Brock!`,highlight:m};}},
+      {ic:"🦋",lb:"Casulo acelerado",fn:()=>{const bug=G.team.find(m=>DEX[m.species].t==="bug");if(bug){bug.lv=Math.max(bug.lv,10);tryEvolveSilent(bug);return{title:"Casulo Acelerado",text:`O treino intenso na floresta faz seu <b>${bug.species}</b> evoluir precocemente!`,highlight:bug};}lvlAll(3);return{title:"Treino na floresta",text:`Sem inseto no time — mas o treino rende: <b>time +3 níveis</b>.`,highlight:null};}},
+      {ic:"🧢",lb:"Caçador de Insetos",fn:()=>{const m=lvlOne(G.team[0],2);return{title:"Dica do Jovem Caçador de Insetos",text:`Você vence um Bug Catcher local e ganha experiência extra: <b>${m.species} +2 níveis</b>.`,highlight:m};}},
+    ],
+    red:[
+      {ic:"🐝",lb:"Enxame Beedrill",fn:()=>{const m=dropLvOne(G.team[0],1);return{title:"Enxame de Beedrill",text:`Seu time é atacado e você corre até o Centro Pokémon. Exaustão: <b>${m.species} -1 nível</b>.`,highlight:m};}},
+      {ic:"🤢",lb:"Veneno de Weedle",fn:()=>{const t=randMember(true)||G.team[0];dropLvOne(t,3);return{title:"Veneno de Weedle",text:`Sem Antídoto, <b>${t.species}</b> passa mal na travessia e chega enfraquecido ao ginásio: <b>-3 níveis</b>.`,highlight:t};}},
+      {ic:"🐦",lb:"Susto na grama",loss:true,fn:()=>{const g=loseWeakest();if(!g)return{title:"Susto na Grama Alta",text:`Um Pidgeotto assusta o time, mas você só tem seu inicial — ninguém fugiu.`,highlight:null};return{title:"Susto na Grama Alta",text:`Seu Pokémon mais fraco se assusta com um Pidgeotto e <b>foge de volta pra Rota 1</b>: perdeu ${g.species}.`,highlight:null};}},
+    ]
+  },
+  /* 1 — Misty (Água) ------------------------------------------- */
+  {
+    green:[
+      {ic:"🌙",lb:"Moon Stone",fn:()=>{const c=G.team.find(m=>DEX[m.species].evo&&DEX[m.species].evoLv>=99);if(c){const old=c.species;doEvolve(c);G.stats.evolved++;return{title:"Descoberta no Mt. Moon",text:`Uma <b>Moon Stone</b> brilha na cratera! <b>${old}</b> evoluiu para ${c.species}!`,highlight:c};}lvlAll(3);return{title:"Descoberta no Mt. Moon",text:`Uma Moon Stone brilha, mas ninguém compatível — a energia reforça o time: <b>+3 níveis gerais</b>.`,highlight:null};}},
+      {ic:"🌉",lb:"Ponte Pepita",fn:()=>{lvlAll(2);return{title:"Desafio da Ponte Pepita",text:`Você vence os 5 treinadores seguidos da Nugget Bridge! <b>Time inteiro +2 níveis</b>.`,highlight:null};}},
+      {ic:"🦊",lb:"Resgate em Cerulean",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Eevee",14);return{title:"Resgate em Cerulean",text:`Você ajuda o Bill no farol e ganha um <b>Eevee</b> precoce (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🐟",lb:"Magikarp honesto",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Magikarp",19);return{title:"Vendedor de Magikarp Honesto",text:`Um homem honesto te entrega um <b>Magikarp</b> a 1 nível de virar Gyarados (Lv ${m.lv})!`,highlight:m};}},
+    ],
+    red:[
+      {ic:"🚀",lb:"Emboscada Rocket",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Emboscada Rocket no Mt. Moon",text:`Capangas te cercam no túnel escuro. Na fuga você deixa cair uma Poké Bola: <b>perdeu ${st.species}</b>.`,highlight:null};}},
+      {ic:"🎭",lb:"Golpe do Magikarp",fn:()=>{if(!freeSlot()){dropLvAll(1);return{title:"Golpe do Vendedor de Magikarp",text:`Você quase cai no golpe, mas o time está cheio. Distração custa <b>-1 nível geral</b>.`,highlight:null};}const m=addMon("Magikarp",5);return{title:"Golpe do Vendedor de Magikarp",text:`Você aceita um <b>Magikarp Lv 5</b> que só sabe Splash — ocupa um slot valioso sem ajudar contra a Misty.`,highlight:m};}},
+      {ic:"🦇",lb:"Confusão de Zubats",fn:()=>{const s=strongest();dropLvOne(s,2);return{title:"Confusão de Zubats",text:`O bando de Zubats desorienta o time. Seu Pokémon mais forte, <b>${s.species}</b>, entra desgastado: <b>-2 níveis</b>.`,highlight:s};}},
+    ]
+  },
+  /* 2 — Lt. Surge (Elétrico) ----------------------------------- */
+  {
+    green:[
+      {ic:"🕳️",lb:"Caverna Diglett",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.4?"Dugtrio":"Diglett";const m=addMon(s,Math.random()<0.4?26:12);return{title:"Recompensa da Caverna Diglett",text:`Um <b>${s}</b> surge do chão (Lv ${m.lv}) — imunidade total aos choques do Surge!`,highlight:m};}},
+      {ic:"🚢",lb:"Banquete S.S. Anne",fn:()=>{lvlAll(2);return{title:"Banquete no S.S. Anne",text:`Tratamento VIP a bordo! <b>Time inteiro +2 níveis</b> (e quem estava perto, evoluiu).`,highlight:null};}},
+      {ic:"🎁",lb:"Presente do Capitão",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.5?"Abra":"Machop";const m=addMon(s,16);return{title:"Presente do Capitão",text:`Além de ensinar Cut, o capitão te entrega um <b>${s}</b> já treinado (Lv ${m.lv})!`,highlight:m};}},
+    ],
+    red:[
+      {ic:"🤢",lb:"Enjoo marítimo",fn:()=>{const s=strongest();dropLvOne(s,2);return{title:"Enjoo Marítimo no S.S. Anne",text:`O navio balança demais e <b>${s.species}</b> passa mal, chegando fraco ao Lt. Surge: <b>-2 níveis</b>.`,highlight:s};}},
+      {ic:"⚡",lb:"Lixeiras eletrificadas",fn:()=>{const a=G.team[0],b=G.team[1]||G.team[0];dropLvOne(a,2);if(b!==a)dropLvOne(b,2);return{title:"Armadilha das Lixeiras",text:`Você mexe nos botões cedo demais e leva uma descarga: <b>-2 níveis</b> em dois Pokémon.`,highlight:a};}},
+      {ic:"🚀",lb:"Saqueadores no porto",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Saqueadores no Porto",text:`A Rocket aproveita a confusão em Vermilion e <b>rouba ${st.species}</b> dos seus reservas.`,highlight:null};}},
+    ]
+  },
+  /* 3 — Erika (Planta) ----------------------------------------- */
+  {
+    green:[
+      {ic:"💎",lb:"Pedra Elemental",fn:()=>{const c=G.team.find(m=>DEX[m.species].evo&&DEX[m.species].evoLv>=99);if(c){const old=c.species;doEvolve(c);G.stats.evolved++;return{title:"Compras no Departamento de Celadon",text:`Um treinador generoso te dá uma Pedra Elemental! <b>${old}</b> evoluiu para ${c.species}!`,highlight:c};}lvlAll(3);return{title:"Compras no Departamento",text:`Você ganha uma pedra, mas ninguém compatível — treino reforça o time: <b>+3 níveis</b>.`,highlight:null};}},
+      {ic:"🎰",lb:"Jackpot Game Corner",fn:()=>{if(!freeSlot())return bonusFull();const s=["Dratini","Scyther","Porygon"][Math.floor(Math.random()*3)];const m=addMon(s,18);return{title:"Jackpot no Game Corner",text:`Sorte nas máquinas! Você resgata um <b>${s}</b> (Lv ${m.lv}) de prêmio.`,highlight:m};}},
+      {ic:"🔥",lb:"Fogo contra Erika",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.5?"Growlithe":"Vulpix";const m=addMon(s,16);return{title:"Chá da Mansão Celadon",text:`Você encontra um <b>${s}</b> (Lv ${m.lv}) — vantagem perfeita de Fogo contra a Erika!`,highlight:m};}},
+    ],
+    red:[
+      {ic:"🎰",lb:"Vício no cassino",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Vício no Cassino",text:`Você perde a noção do tempo nos caça-níqueis. A Rocket <b>confisca ${st.species}</b> como pagamento de dívida.`,highlight:null};}},
+      {ic:"👻",lb:"Assombração",loss:true,fn:()=>{const g=loseWeakest();if(!g)return{title:"Assombração em Lavender",text:`Fantasmas aterrorizam o time, mas você só tem seu inicial — ninguém fugiu.`,highlight:null};return{title:"Assombração em Lavender",text:`Sem o Silph Scope, fantasmas da Pokémon Tower aterrorizam a equipe. <b>${g.species} foge em pânico</b> (perda permanente).`,highlight:null};}},
+      {ic:"🕯️",lb:"Rock Tunnel escuro",fn:()=>{dropLvAll(2);return{title:"Escuridão no Rock Tunnel",text:`Sem Flash, você se perde por dias no túnel. O time chega exausto: <b>-2 níveis gerais</b>.`,highlight:null};}},
+    ]
+  },
+  /* 4 — Koga (Veneno) ------------------------------------------ */
+  {
+    green:[
+      {ic:"😴",lb:"Snorlax",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Snorlax",30);return{title:"Despertar da Poké Flauta",text:`Você toca a flauta e captura o gigante <b>Snorlax</b> (Lv ${m.lv}) — um tanque pro resto da carreira!`,highlight:m};}},
+      {ic:"🦘",lb:"Safari Zone",fn:()=>{if(!freeSlot())return bonusFull();const s=["Tauros","Kangaskhan","Chansey","Rhyhorn"][Math.floor(Math.random()*4)];const m=addMon(s,28);return{title:"Sorte Grande na Safari Zone",text:`A Safari Ball funciona de primeira! Você captura um <b>${s}</b> (Lv ${m.lv}).`,highlight:m};}},
+      {ic:"🥋",lb:"Dojo de Saffron",fn:()=>{if(!freeSlot())return bonusFull();const s=["Hitmonlee","Hitmonchan","Hypno"][Math.floor(Math.random()*3)];const m=addMon(s,30);return{title:"Rei do Dojo de Saffron",text:`Você vence o Mestre do Karatê e ganha um <b>${s}</b> (Lv ${m.lv}) pra destruir o Koga!`,highlight:m};}},
+    ],
+    red:[
+      {ic:"🌾",lb:"Frustração Safari",fn:()=>{dropLvAll(2);return{title:"Frustração na Safari Zone",text:`O Pokémon incrível foge e você se perde na selva. O time gasta todas as energias te procurando: <b>-2 níveis gerais</b>.`,highlight:null};}},
+      {ic:"🏍️",lb:"Gangue de motoqueiros",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Gangue de Motoqueiros",text:`Uma gangue de Cue Balls te cerca na Rota 17 e <b>rouba ${st.species}</b> (seu segundo maior nível).`,highlight:null};}},
+      {ic:"☠️",lb:"Armadilha ninja",fn:()=>{const a=G.team[0],b=G.team[1]||G.team[0];dropLvOne(a,3);if(b!==a)dropLvOne(b,3);return{title:"Armadilha Ninja Tóxica",text:`Discípulos de Koga envenenam suas frutas. Dois Pokémon entram no ginásio enfraquecidos: <b>-3 níveis cada</b>.`,highlight:a};}},
+    ]
+  },
+  /* 5 — Sabrina (Psíquico) ------------------------------------- */
+  {
+    green:[
+      {ic:"🦕",lb:"Herói da Silph",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Lapras",30);return{title:"Herói da Silph Co.",text:`Você derrota os executivos da Rocket e um cientista te entrega um <b>Lapras</b> de alto nível (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🔬",lb:"Protótipo do Presidente",fn:()=>{lvlAll(3);return{title:"Protótipo do Presidente",text:`O presidente da Silph equipa seu time com itens de ponta: <b>+3 níveis pra toda a equipe</b> antes da Sabrina.`,highlight:null};}},
+      {ic:"😈",lb:"Sombra de Lavender",fn:()=>{const dark=G.team.find(m=>["ghost","normal","electric"].includes(DEX[m.species].t))||strongest();lvlOne(dark,4);return{title:"Sombra de Lavender",text:`Seu <b>${dark.species}</b> aprende um golpe decisivo contra Psíquicos: <b>+4 níveis</b>, dobrando suas chances.`,highlight:dark};}},
+    ],
+    red:[
+      {ic:"🚀",lb:"Emboscada Giovanni",loss:true,fn:()=>{const s=strongest();if(G.team.length<=1){G.pendingRocketGameOver=true;G.stats.stolen++;return rocketLast();}const i=G.team.indexOf(s===G.team[0]?(G.team[1]||s):s);const st=G.team.splice(i,1)[0];G.stats.stolen++;return{title:"Emboscada de Giovanni",text:`O chefe da Rocket te derrota no 11º andar e <b>confisca ${st.species}</b> como troféu.`,highlight:null};}},
+      {ic:"🌀",lb:"Labirinto teleporte",fn:()=>{dropLvAll(3);return{title:"Labirinto de Teletransporte",text:`Preso nos pisos de teleporte, você enfrenta todos os médiuns antes da líder. O time chega no limite: <b>-3 níveis geral</b>.`,highlight:null};}},
+      {ic:"🧠",lb:"Controle mental",fn:()=>{const t=randMember(false);dropLvOne(t,3);return{title:"Controle Mental",text:`O poder psíquico confunde <b>${t.species}</b>, que esquece seus melhores golpes: <b>-3 níveis</b> neste ginásio.`,highlight:t};}},
+    ]
+  },
+  /* 6 — Blaine (Fogo) ------------------------------------------ */
+  {
+    green:[
+      {ic:"🦴",lb:"Ressurreição",fn:()=>{if(!freeSlot())return bonusFull();const s=["Omastar","Kabutops","Aerodactyl"][Math.floor(Math.random()*3)];const m=addMon(s,34);return{title:"Ressurreição no Laboratório",text:`Os cientistas restauram seu fóssil! Você ganha um <b>${s}</b> (Lv ${m.lv}) já evoluído pra apagar o fogo do Blaine.`,highlight:m};}},
+      {ic:"🧊",lb:"Lenda Seafoam",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.45?"Articuno":(Math.random()<0.5?"Gyarados":"Starmie");const m=addMon(s,36);return{title:"Lenda das Ilhas Seafoam",text:`Explorando a caverna congelada, você captura <b>${s}</b> (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"📖",lb:"Diários da Mansão",fn:()=>{lvlAll(4);return{title:"Diários Secretos da Mansão",text:`Você acha Rare Candies e TMs nos escombros: <b>+4 níveis divididos no time</b>.`,highlight:null};}},
+    ],
+    red:[
+      {ic:"🎭",lb:"Ladrão na Mansão",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Ladrão na Mansão Pokémon",text:`Um Burglar se aproveita da fumaça e <b>furta ${st.species}</b> na surdina.`,highlight:null};}},
+      {ic:"🔥",lb:"Quiz errado",fn:()=>{dropLvAll(3);return{title:"Quiz do Blaine Errado",text:`Você erra o quiz e é forçado a batalhar contra todos os treinadores sob calor extremo: <b>-3 níveis gerais</b>.`,highlight:null};}},
+      {ic:"🌊",lb:"Correnteza Seafoam",loss:true,fn:()=>{const g=loseWeakest();if(!g)return{title:"Correnteza das Ilhas Seafoam",text:`A corrente arrasta a jangada, mas você segura seu único Pokémon a tempo.`,highlight:null};return{title:"Correnteza das Ilhas Seafoam",text:`Uma corrente arrasta sua jangada; pra salvar sua vida, <b>${g.species} fica pra trás</b> na caverna (perda permanente).`,highlight:null};}},
+    ]
+  },
+  /* 7 — Giovanni (Terra) --------------------------------------- */
+  {
+    green:[
+      {ic:"🌩️",lb:"Usina Elétrica",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.45?"Zapdos":(Math.random()<0.5?"Electabuzz":"Magneton");const m=addMon(s,38);return{title:"Sobrecarga na Usina Elétrica",text:`Na Power Plant abandonada você captura <b>${s}</b> (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"⚔️",lb:"Duelo com o Rival",fn:()=>{lvlAll(4);return{title:"Treino na Rota 22 com o Rival",text:`Você vence um duelo épico contra o Rival! <b>Time +4 níveis</b> e toda evolução pendente acontece.`,highlight:null};}},
+      {ic:"🐲",lb:"Deserção Rocket",fn:()=>{if(!freeSlot())return bonusFull();const s=["Dragonite","Alakazam","Gyarados"][Math.floor(Math.random()*3)];const m=addMon(s,40);return{title:"Deserção Rocket",text:`Um membro arrependido da Rocket te devolve um <b>${s}</b> (Lv ${m.lv}) pronto pra guerra.`,highlight:m};}},
+    ],
+    red:[
+      {ic:"🚀",lb:"Ultimato Rocket",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Ultimato da Equipe Rocket",text:`A elite da Rocket faz uma emboscada pesada na Rota 22 e <b>rouba ${st.species}</b>, um titular seu.`,highlight:null};}},
+      {ic:"🌋",lb:"Fissure",fn:()=>{const t=randMember(false);dropLvOne(t,5);return{title:"Tremor de Terra (Fissure)",text:`Testes sísmicos abrem uma fenda. <b>${t.species}</b> cai e fica gravemente ferido: <b>-5 níveis</b>.`,highlight:t};}},
+      {ic:"🌀",lb:"Piso giratório",fn:()=>{dropLvAll(3);return{title:"Piso Giratório Mortal",text:`As armadilhas do ginásio de Giovanni deixam o time tonto: <b>-3 níveis em cada membro</b> antes da luta.`,highlight:null};}},
+    ]
+  },
+];
+/* fallbacks compartilhados */
+function bonusFull(){lvlAll(2);return{title:"Time cheio",text:`Seu time está cheio (6/6), então a oportunidade vira treino: <b>+2 níveis gerais</b>.`,highlight:null};}
+function rocketLast(){return{title:"Team Rocket — sem saída",text:`A Rocket leva seu <b>último Pokémon</b> à força. Sem parceiros, a carreira acaba aqui.`,highlight:null};}
+
+/* proporção de VERDE por fase (resto é vermelho) */
+function greenRatio(){
+  const gi=G.gymIndex;
+  if(gi<=1)return 0.70;      // ginásios 1-2
+  if(gi<=4)return 0.50;      // 3-5
+  return 0.35;               // 6-8 e pré-Elite
+}
+/* conjunto do ginásio atual (Elite usa o do último ginásio) */
+function currentGymSet(){return GYM_EVENTS[Math.min(G.gymIndex,GYM_EVENTS.length-1)];}
+
+/* escolhe um evento (green/red por sorteio da proporção) e devolve {ev, good} */
+function rollGymEvent(){
+  const set=currentGymSet();
+  const good=Math.random()<greenRatio();
+  if(good){const ev=set.green[Math.floor(Math.random()*set.green.length)];return {ev,good:true};}
+  // vermelhos: eventos de PERDA de Pokémon são bem mais raros (peso 0.2 vs 1.0)
+  const weighted=set.red.map(ev=>({ev,w:ev.loss?0.1:1}));
+  const tot=weighted.reduce((a,x)=>a+x.w,0);
+  let r=Math.random()*tot;
+  for(const x of weighted){if((r-=x.w)<=0)return {ev:x.ev,good:false};}
+  return {ev:set.red[0],good:false};
+}
+
+/* desenha a roleta com fatias dos eventos do ginásio atual */
+function rouletteScreen(){
+  const set=currentGymSet();
+  const picked=rollGymEvent();
+  // monta as fatias: todos os green depois todos os red, tamanho ~ proporção
+  const gr=greenRatio();
+  const greens=set.green, reds=set.red;
+  const sectors=[];
+  const perGreen=greens.length?(gr/greens.length):0;
+  const perRed=reds.length?((1-gr)/reds.length):0;
+  greens.forEach(ev=>sectors.push({ev,good:true,frac:perGreen}));
+  reds.forEach(ev=>sectors.push({ev,good:false,frac:perRed}));
+  const R=120,CX=130,CY=130;let ang=-90;
+  function pol(cx,cy,r,deg){const rad=deg*Math.PI/180;return[cx+r*Math.cos(rad),cy+r*Math.sin(rad)];}
+  let targetMid=0;
+  const paths=sectors.map((s,i)=>{
+    const sweep=s.frac*360;const start=ang,end=ang+sweep,mid=ang+sweep/2;ang+=sweep;
+    if(s.ev===picked.ev && s.good===picked.good)targetMid=mid;
+    const [x1,y1]=pol(CX,CY,R,start);const [x2,y2]=pol(CX,CY,R,end);
+    const large=sweep>180?1:0;
+    const fill=s.good?'rgba(74,222,128,.22)':'rgba(248,113,113,.22)';
+    const stroke=s.good?'#4ade80':'#f87171';
+    const [lx,ly]=pol(CX,CY,R*0.64,mid);
+    return `<path d="M${CX},${CY} L${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} Z" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/><text x="${lx}" y="${ly}" font-size="15" text-anchor="middle" dominant-baseline="middle">${s.ev.ic}</text>`;
+  }).join("");
+  scene(`<div class="scene-text center" style="color:var(--muted)">🎰 Roleta da estrada — rumo a ${GYMS[Math.min(G.gymIndex,GYMS.length-1)].leader}</div>
+    <div class="wheel-wrap"><div class="wheel-ptr"></div>
+      <svg class="wheel" id="wheel" viewBox="0 0 260 260"><circle cx="130" cy="130" r="122" fill="var(--bg)" stroke="var(--border)" stroke-width="4"/>${paths}</svg>
+      <div class="wheel-hub">🎲</div></div>
+    <div class="scene-text center" style="color:var(--muted);font-size:.72rem">Verde = sorte · Vermelho = perigo · ${Math.round(gr*100)}% verde nesta fase</div>`);
+  const wheel=document.getElementById("wheel");
+  const target=-90-targetMid, finalRot=5*360+(((target%360)+360)%360);
+  const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce){wheel.style.transition="none";wheel.style.transform=`rotate(${(((target%360)+360)%360)}deg)`;setTimeout(()=>applyGymEvent(picked),300);return;}
+  wheel.style.transition="none";wheel.style.transform="rotate(0deg)";
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{wheel.style.transition="transform 4s cubic-bezier(.12,.66,.08,1)";wheel.style.transform=`rotate(${finalRot}deg)`;});});
+  setTimeout(()=>applyGymEvent(picked),4300);
+}
+
+/* aplica o evento sorteado */
+function applyGymEvent(picked){
+  G.day++;G.step++;
+  const res=picked.ev.fn(G);
+  if(picked.good)G.stats.eventsGood++;else G.stats.eventsBad++;
+  G.lastResult={kind:"gymevent",title:res.title,emoji:picked.ev.ic,text:res.text,good:picked.good,highlight:res.highlight};
+  G.phase="event";render();
+}
+
+function tryEvolve(m,r){const d=DEX[m.species];if(d.evo&&d.evoLv<99&&m.lv>=d.evoLv){const old=m.species;doEvolve(m);G.stats.evolved++;r.text+=`\n\n✨ <b>${old}</b> <span class="reward">evoluiu para ${m.species}!</span>`;r.highlight=m;}}
+function tryEvolveSilent(m){const d=DEX[m.species];if(d.evo&&d.evoLv<99&&m.lv>=d.evoLv){doEvolve(m);G.stats.evolved++;}}
+function doEvolve(m){const n=DEX[m.species].evo;if(!n)return;m.species=n;m.t=DEX[n].t;m.e=DEX[n].e;}
+function eventResult(){const r=G.lastResult;const can=G.step>=STEPS_PER_GYM;const over=G.pendingRocketGameOver;scene(`<div class="center">${(r.highlight&&SPRITES[r.highlight.species])?spriteBig(r.highlight.species):`<div class="big fade">${r.emoji}</div>`}<div class="scene-text center" style="color:${r.good?'var(--ok)':'var(--danger)'};font-weight:600;font-size:1.05rem">${r.title}</div><div class="scene-text">${r.text}</div></div>`+stepPips()+teamHTML(r.highlight)+choices([{id:over?"forcegameover":"back",l:over?"💀 Ver fim da carreira":(can?"⚔️ Hora de encarar o ginásio":"🗺️ Continuar na estrada"),cls:"primary"}]));}
+function act_challenge(){const g=GYMS[G.gymIndex];const mult=bestMatchup(g.t);const mine=teamPower();const eff=Math.round(mine*mult);G.lastResult={gym:g,myPower:mine,effPower:eff,mult:mult,foePower:g.power};G.phase="gymresult";render();const chance=eff/(eff+g.power);const win=Math.random()<Math.min(0.95,Math.max(0.05,chance+(eff>=g.power?0.12:0)));setTimeout(()=>{if(win){G.gymIndex++;G.step=0;G.stats.wins++;G.team.forEach(m=>{m.lv+=2;tryEvolveSilent(m);});G.lastResult.win=true;}else G.lastResult.win=false;G.phase="gymresult";render();},700);}
+function gymResult(){const r=G.lastResult;if(r.win===undefined){const mtag=r.mult>1?`<span style="color:var(--ok);font-weight:600">Vantagem de tipo! (×${r.mult})</span>`:(r.mult<1?`<span style="color:var(--danger);font-weight:600">Desvantagem de tipo (×${r.mult})</span>`:`<span style="color:var(--muted)">Tipo neutro</span>`);scene(`<div class="center"><div class="big">⚔️</div><div class="vs"><span><b>Você</b> · ${r.effPower}${r.mult!==1?` <span style="color:var(--muted);font-size:.8em">(${r.myPower}×${r.mult})</span>`:''}</span> <span style="color:var(--muted)">VS</span> <span><b>${r.gym.leader}</b> <span class="tag type-${r.gym.t}">${r.gym.t}</span> · ${r.foePower}</span></div><div class="scene-text center" style="font-size:.82rem;margin:4px 0">${mtag}</div><div class="powerbar"><div style="width:${Math.min(100,r.effPower/(r.effPower+r.foePower)*100)}%;background:var(--accent)"></div></div><div class="scene-text center" style="color:var(--muted)">Batalha de ginásio em andamento...</div></div>`);return;}const g=r.gym;if(r.win){const done=G.gymIndex>=GYMS.length;scene(`<div class="center"><div class="big">${g.b}</div><div class="scene-text center" style="color:var(--ok);font-weight:600">Insígnia conquistada! (${g.leader})</div><div class="scene-text">Seu poder efetivo (${r.effPower}) superou ${g.leader} (${r.foePower}).
+<span class="reward">Todo o time ganhou força com a vitória!</span></div></div>`+teamHTML()+choices([{id:done?"toelite":"back",l:done?"🏛️ Rumo à Elite Four":"🗺️ Seguir na estrada",cls:"primary"}]));}else{G.phase="gameover";render();}}
+function eliteScreen(){const e=ELITE[G.eliteIndex];const champ=G.eliteIndex===ELITE.length-1;scene(`<div class="scene-text">🏛️ <b>Platô Índigo</b> — ${G.eliteIndex}/5 vencidos
+Próximo: <b>${e.e} ${e.leader}</b> <span class="tag type-${e.t}">${e.t}</span> · poder ${e.power}
+Seu poder: <b>${teamPower()}</b>
+${champ?'A última porta — seu antigo rival, agora Champion.':'<span class="bad">Derrota aqui encerra a carreira.</span>'}</div>`+teamHTML()+choices([{id:"elitefight",l:`⚔️ Enfrentar ${e.leader}`,cls:"primary"}]));}
+function resolveElite(){const e=ELITE[G.eliteIndex];const mult=bestMatchup(e.t);const mine=teamPower();const eff=Math.round(mine*mult);const chance=eff/(eff+e.power);const win=Math.random()<Math.min(0.9,Math.max(0.04,chance));G.lastResult={e,mine,effPower:eff,mult,win};G.phase="eliteresult";if(win){G.eliteIndex++;G.stats.wins++;G.team.forEach(m=>{m.lv+=1;tryEvolveSilent(m);});}render();}
+function eliteResult(){const r=G.lastResult;if(r.win){if(G.eliteIndex>=ELITE.length){G.phase="champion";return render();}const nx=ELITE[G.eliteIndex];scene(`<div class="center"><div class="big">✅</div><div class="scene-text center" style="color:var(--ok);font-weight:600">${r.e.leader} derrotado!</div><div class="scene-text">Poder efetivo ${r.effPower}${r.mult!==1?` (×${r.mult} tipo)`:''} venceu ${r.e.power}. Próximo: <b>${nx.e} ${nx.leader}</b> · ${nx.power}</div></div>`+choices([{id:"elitenext",l:`➡️ Enfrentar ${nx.leader}`,cls:"primary"}]));}else{G.phase="gameover";render();}}
+function champion(){scene(`<div class="center"><div class="big">👑✨</div><h1 style="margin:8px 0">CAMPEÃO DE KANTO!</h1><div class="scene-text center">Contra uma estrada que te tirou Pokémon, dinheiro e sono — você chegou ao topo.
+
+Seu rival estende a mão: "Me enganei com você."
+
+<span class="reward">Carreira completa: 8 insígnias · Elite Four · Champion</span></div></div>`+teamHTML()+careerSummary(true)+choices([{id:"restart",l:"🔁 Começar nova carreira",cls:"primary"}]));}
+function careerSummary(won){const s=G.stats;const reached=G.gymIndex>=GYMS.length?(G.eliteIndex>0?`Elite Four (${G.eliteIndex}/5)`:`Platô Índigo`):`Ginásio ${G.gymIndex+1} de 8`;const teamList=G.team.length?G.team.map(m=>`${m.species} Lv${m.lv}`).join(" · "):"— (time vazio)";return `<div class="card" style="margin-top:10px;text-align:left"><div style="font-weight:600;color:var(--accent);margin-bottom:8px">📜 Resumo da carreira</div><div style="font-size:.86rem;line-height:1.8">🏅 Insígnias conquistadas: <b>${G.gymIndex}/8</b><br>${won?'👑 <b>Tornou-se Campeão de Kanto!</b><br>':`🏁 Chegou até: <b>${reached}</b><br>`}🎯 Pokémon capturados: <b>${s.caught}</b><br>✨ Evoluções: <b>${s.evolved}</b><br>⚔️ Vitórias de líder/elite: <b>${s.wins}</b><br>🍀 Eventos bons / 😖 ruins: <b>${s.eventsGood}</b> / <b>${s.eventsBad}</b><br>🚀 Pokémon roubados pela Rocket: <b>${s.stolen}</b> · 💔 fugas: <b>${s.fled}</b><br>📅 Dias na estrada: <b>${G.day}</b></div><div style="font-size:.8rem;color:var(--muted);margin-top:8px">Time final: ${teamList}</div></div>`;}
+function gameOver(){
+  let intro;
+  if(G.pendingRocketGameOver){
+    intro=`A Team Rocket levou seu <b>último Pokémon</b> à força. Sem nenhum parceiro, não há jornada a continuar.`;
+  } else {
+    const g=GYMS[Math.min(G.gymIndex,GYMS.length-1)];const lostTo=G.gymIndex<GYMS.length?g.leader:(ELITE[G.eliteIndex]?ELITE[G.eliteIndex].leader:"Elite Four");
+    intro=`Você perdeu para <b>${lostTo}</b>. Em Kanto não há segunda chance num duelo oficial — sua jornada termina aqui.`;
+  }
+  scene(`<div class="center"><div class="big">💀</div><h1 style="margin:8px 0;color:var(--danger)">FIM DA CARREIRA</h1><div class="scene-text center">${intro}
+
+Toda lenda que você admirava também começou do zero. Respire fundo e comece de novo.</div></div>`+careerSummary(false)+choices([{id:"restart",l:"🔁 Começar do zero",cls:"primary"}]));
+}
+window.act=function(id){
+  switch(id){
+    case"go":G.phase="pick";break;
+    case"roll":G.phase="roulette";render();return;
+    case"train":doTrain();return;
+    case"back":G.phase="hub";break;
+    case"forcegameover":G.phase="gameover";break;
+    case"search":{if(G.team.length>=6){G.phase="hub";break;}const w=pickWild();G.team.push(w);G.stats.caught++;G.day++;G.step++;G.lastResult={kind:"catch",title:"Captura garantida!",emoji:w.e,text:`Você vasculha a grama alta com calma e encontra um <b>${w.species}</b> (Lv ${w.lv}). Captura certeira — entrou pro time!`,good:true,highlight:G.team[G.team.length-1]};G.stats.eventsGood++;G.phase="event";render();return;}
+    case"challenge":act_challenge();return;
+    case"toelite":G.phase="elite";break;
+    case"elitefight":resolveElite();return;
+    case"elitenext":G.phase="elite";break;
+    case"restart":G=newGame();break;
+  }
+  render();
+};
+G=newGame();render();
+</script>
+</body>
+</html>

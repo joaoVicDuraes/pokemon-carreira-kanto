@@ -1,0 +1,130 @@
+# -*- coding: utf-8 -*-
+"""Monta a v2 do jogo: lógica extraída do template atual + correções + UI/CSS novos + fontes + sprites."""
+import io, re, json, base64, os, importlib.util
+
+BASE = os.path.dirname(os.path.abspath(__file__))
+SPR = os.path.join(BASE, "sprites", "firered-leafgreen")
+OUT = os.path.join(os.path.dirname(BASE), "index.html")
+
+def rd(p): return io.open(p, "r", encoding="utf-8").read()
+def sub1(s, old, new, label):
+    n = s.count(old)
+    assert n == 1, "%s: esperado 1, achou %d" % (label, n)
+    return s.replace(old, new)
+
+tpl = rd(os.path.join(BASE, "game_template.html"))
+def cut(a, b):
+    i, j = tpl.index(a), tpl.index(b)
+    assert i < j, (a, b)
+    return tpl[i:j]
+
+A  = cut("const DEX = {", "const $scene")
+B1 = cut("/* ============ EVENTOS POR GIN", "/* desenha a roleta")
+B2 = cut("function tryEvolve(m,r){", "function eventResult(")
+
+# ---------- A: estado novo + imunidade ----------
+A = re.sub(r"function newGame\(\)\{.*?\n",
+    'function newGame(){return{phase:"title",team:[],gymIndex:0,eliteIndex:0,step:0,day:1,starter:null,vrDone:false,'
+    'recorded:false,newRecord:false,pendingRocketGameOver:false,battle:null,lastResult:null,lastWin:null,log:[],'
+    'stats:{caught:0,evolved:0,wins:0,eventsGood:0,eventsBad:0,stolen:0,fled:0,shinies:0}};}\n', A, count=1, flags=re.S)
+assert 'phase:"title"' in A
+A = sub1(A, "return best||1;", "return G.team.length?Math.max(0.5,best):1; /* imunidade vira 0.5: ainda há golpes de cobertura */", "bestMatchup")
+# curva de dificuldade calibrada por simulação (sim_full/tune)
+GYM_POW = [22, 50, 78, 102, 128, 152, 176, 200]
+ELITE_POW = [225, 245, 265, 285, 310]
+gi = A.index("const GYMS="); ge = A.index("const ELITE=")
+gblock = A[gi:ge]; it = iter(GYM_POW)
+gblock2 = re.sub(r"power:\d+", lambda m: "power:%d" % next(it), gblock)
+assert gblock2.count("power:") == 8
+ei = ge; ee = A.index("const STEPS_PER_GYM")
+eblock = A[ei:ee]; it2 = iter(ELITE_POW)
+eblock2 = re.sub(r"power:\d+", lambda m: "power:%d" % next(it2), eblock)
+assert eblock2.count("power:") == 5
+A = A[:gi] + gblock2 + eblock2 + A[ee:]
+
+# ---------- B1: helpers honestos + bugs ----------
+B1 = re.sub(r"function addMon\(species,lv\)\{.*?G\.team\.push\(m\);G\.stats\.caught\+\+;return m;\}",
+    "function addMon(species,lv,raw){const m=mon(species,lv);m.shiny=Math.random()<SHINY_RATE;"
+    "if(!raw&&G.team.length){const s=G.team.slice().sort((a,b)=>b.lv-a.lv)[0];const fl=Math.round(s.lv*0.85);if(m.lv<fl)m.lv=fl;}"
+    "G.team.push(m);G.stats.caught++;return m;}", B1, count=1, flags=re.S)
+assert "function addMon(species,lv,raw)" in B1
+B1 = re.sub(r"function lvlAll\(n\)\{.*?\}\);\}", "function lvlAll(n){G.team.forEach(m=>{m.lv+=n;tryEvolveSilent(m);});}", B1, count=1)
+B1 = re.sub(r"function lvlOne\(m,n\)\{.*?return m;\}", "function lvlOne(m,n){m.lv+=n;tryEvolveSilent(m);return m;}", B1, count=1)
+B1 = re.sub(r"function dropLvOne\(m,n\)\{.*?return m;\}", "function dropLvOne(m,n){m.lv=Math.max(5,m.lv-n);return m;}", B1, count=1)
+B1 = re.sub(r"function dropLvAll\(n\)\{.*?\}\);\}", "function dropLvAll(n){G.team.forEach(m=>{m.lv=Math.max(5,m.lv-n);});}", B1, count=1)
+for f in ["function lvlAll(n){G.team.forEach(m=>{m.lv+=n;", "function lvlOne(m,n){m.lv+=n;", "function dropLvOne(m,n){m.lv=Math.max(5,m.lv-n);", "function dropLvAll(n){G.team.forEach(m=>{m.lv=Math.max(5,m.lv-n);"]:
+    assert f in B1, f
+# BUG: fuga com só o inicial encerrava a carreira mesmo dizendo "ninguém fugiu"
+B1 = sub1(B1, "if(!w){G.pendingRocketGameOver=true;return null;}", "if(!w)return null;", "loseWeakest")
+B1 = sub1(B1, 'addMon("Magikarp",5)', 'addMon("Magikarp",5,true)', "magikarp golpe")
+B1 = sub1(B1, "a 1 nível de virar Gyarados", "prestes a virar Gyarados", "magikarp texto")
+
+# ---------- textos = efeito real (os helpers eram amplificados, os textos não) ----------
+gain_all = lambda n: n + 3
+gain_one = lambda n: 2 * n + 2
+loss = lambda n: max(1, round(n * 0.7))
+start = B1.index("const GYM_EVENTS=[")
+head, body = B1[:start], B1[start:]
+chunks = re.split(r"(?=\{ic:)", body)
+fixed, warn = [], []
+for ch in chunks:
+    gains, losses = set(), set()
+    def r_all(m):  v = gain_all(int(m.group(1))); gains.add(v); return "lvlAll(%d)" % v
+    def r_one(m):  v = gain_one(int(m.group(2))); gains.add(v); return "lvlOne(%s,%d)" % (m.group(1), v)
+    def r_d1(m):   v = loss(int(m.group(2)));     losses.add(v); return "dropLvOne(%s,%d)" % (m.group(1), v)
+    def r_da(m):   v = loss(int(m.group(1)));     losses.add(v); return "dropLvAll(%d)" % v
+    ch = re.sub(r"lvlAll\((\d+)\)", r_all, ch)
+    ch = re.sub(r"lvlOne\(([^,()]+),(\d+)\)", r_one, ch)
+    ch = re.sub(r"dropLvOne\(([^,()]+),(\d+)\)", r_d1, ch)
+    ch = re.sub(r"dropLvAll\((\d+)\)", r_da, ch)
+    if len(gains) > 1 or len(losses) > 1:
+        warn.append(ch[:60])
+    def r_txt(m):
+        sign = m.group(1)
+        vals = gains if sign == "+" else losses
+        if not vals: return m.group(0)
+        v = next(iter(vals))
+        return "%s%d %s" % (sign, v, "nível" if v == 1 else "níveis")
+    ch = re.sub(r"([+-])(\d+) (níveis|nível)", r_txt, ch)
+    fixed.append(ch)
+B1 = head + "".join(fixed)
+assert not warn, warn
+
+# ---------- B2: evolução em cadeia (Lv alto evolui 2 estágios) ----------
+B2 = re.sub(r"function tryEvolveSilent\(m\)\{.*?\}\}",
+    "function tryEvolveSilent(m){let g=0;while(g++<3){const d=DEX[m.species];if(d.evo&&d.evoLv<99&&m.lv>=d.evoLv){doEvolve(m);G.stats.evolved++;}else break;}}",
+    B2, count=1, flags=re.S)
+assert "while(g++<3)" in B2
+
+# ---------- sprites: frente, costas, shiny ----------
+spec = importlib.util.spec_from_file_location("bg", os.path.join(BASE, "build_game.py"))
+bg = importlib.util.module_from_spec(spec); spec.loader.exec_module(bg)
+DEX_NUM = bg.DEX_NUM
+dex_names = re.findall(r"^\s*([A-Z][A-Za-z]+):\{t:", A, re.M)
+missing = [n for n in dex_names if n not in DEX_NUM]
+assert not missing, missing
+def uri(path):
+    return "data:image/png;base64," + base64.b64encode(open(path, "rb").read()).decode("ascii") if os.path.exists(path) else None
+sets = {"SPRITES": SPR, "SHINY": os.path.join(SPR, "shiny"), "BACKS": os.path.join(SPR, "back"), "SHINY_BACKS": os.path.join(SPR, "back", "shiny")}
+sprite_js = ""
+for var, folder in sets.items():
+    d = {}
+    for n in dex_names:
+        u = uri(os.path.join(folder, "%04d.png" % DEX_NUM[n]))
+        if u: d[n] = u
+    print(var, len(d), "/", len(dex_names))
+    sprite_js += "const %s = %s;\n" % (var, json.dumps(d, separators=(",", ":")))
+
+# ---------- fontes + CSS + UI ----------
+fonts = json.loads(rd(os.path.join(BASE, "fonts.json")))
+css = rd(os.path.join(BASE, "style_v2.css")).replace("__FONT_PS2P__", fonts["Press Start 2P"]).replace("__FONT_VT323__", fonts["VT323"])
+ui = rd(os.path.join(BASE, "ui_v2.js"))
+
+html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+        '<title>Pokémon Carreira de Treinador — Kanto</title>\n<style>\n' + css + '\n</style>\n</head>\n<body>\n'
+        '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
+        '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main></div>\n'
+        '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + ui + "\n</script>\n</body>\n</html>\n")
+io.open(OUT, "w", encoding="utf-8").write(html)
+print("wrote", OUT, len(html), "chars")

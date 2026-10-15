@@ -21,8 +21,9 @@ b{font-weight:normal;color:var(--blue)}
 #hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
 #hud:empty{display:none}
 .hud-badges{display:flex;gap:3px;background:var(--k);padding:5px 7px;border-radius:20px}
-.hb{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:#3a3a3a;filter:grayscale(1);opacity:.35}
-.hb.on{background:radial-gradient(circle at 35% 30%,#fff6c2,#f5c200);filter:none;opacity:1;box-shadow:0 0 0 2px #fff,0 0 8px #ffd84a}
+.hb{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:14px;background:#2e2e2e;box-shadow:inset 0 0 0 2px #444}
+.hb img{width:20px;height:20px;image-rendering:pixelated;filter:brightness(0) invert(.45);opacity:.6}.hb.trophy{filter:grayscale(1) brightness(.6);opacity:.6}
+.hb.on{background:radial-gradient(circle at 35% 30%,#fffbe0,#ffd84a);filter:none;opacity:1;box-shadow:0 0 0 2px #fff,0 0 8px #ffd84a}.hb.on img{filter:none;opacity:1}
 .hud-chips{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
 .chip{font-family:'PS2P';font-size:7px;background:#fff;border:3px solid var(--k);border-radius:8px;padding:5px 8px;display:flex;flex-direction:column;gap:4px;min-width:58px}
 .chip b{font-size:11px;color:var(--red)}
@@ -174,13 +175,33 @@ b{font-weight:normal;color:var(--blue)}
 .m-pow b{display:block;font-size:12px;color:var(--blue);margin-top:3px}
 
 /* ---------- roleta ---------- */
-.wheel-wrap{position:relative;width:270px;height:270px;margin:14px auto 8px}
-.wheel{width:100%;height:100%;transform-origin:50% 50%;filter:drop-shadow(0 5px 0 rgba(0,0,0,.25))}
-.wheel-ptr{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:24px solid var(--k);z-index:3}
-.wheel-ptr::after{content:'';position:absolute;left:-9px;top:-21px;border-left:9px solid transparent;border-right:9px solid transparent;border-top:15px solid var(--yellow)}
-.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2}
-.wheel-hub .pokeball{width:52px;height:52px;border-width:4px}.wheel-hub .pokeball i{width:18px;height:18px;border-width:4px}
-.legend{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;font-family:'PS2P';font-size:7px}
+.wheel-wrap{position:relative;width:min(300px,86vw);aspect-ratio:1;margin:18px auto 10px}
+.wheel,.wheel-rim{position:absolute;inset:0;width:100%;height:100%}
+.wheel{transform-origin:50% 50%}
+.wheel-rim{pointer-events:none;z-index:1;filter:drop-shadow(0 6px 0 rgba(0,0,0,.28)) drop-shadow(0 0 10px rgba(255,220,120,.25))}
+.bulb{animation:bulb 1.1s steps(1) infinite;filter:drop-shadow(0 0 3px currentColor)}
+.bulb.b1{animation-delay:-.55s}
+.spinning .bulb{animation-duration:.24s}.spinning .bulb.b1{animation-delay:-.12s}
+.landed .bulb{animation:bulbAll .35s steps(1) 5}
+@keyframes bulb{0%{opacity:1}50%{opacity:.25}}
+@keyframes bulbAll{0%{opacity:1}50%{opacity:.15}}
+.sec.hit{animation:hit .5s ease-in-out 3;stroke:#fff;stroke-width:3}
+@keyframes hit{50%{filter:brightness(1.55) saturate(1.2)}}
+.wheel-ptr{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:30px solid #2b1a05;z-index:4;filter:drop-shadow(0 3px 0 rgba(0,0,0,.3))}
+.wheel-ptr::after{content:'';position:absolute;left:-11px;top:-26px;border-left:11px solid transparent;border-right:11px solid transparent;border-top:19px solid var(--yellow)}
+.wheel-ptr::before{content:'';position:absolute;left:-6px;top:-25px;border-left:4px solid transparent;border-right:4px solid transparent;border-top:8px solid #fff6c8;z-index:1}
+.spinning .wheel-ptr{animation:tick .12s ease-in-out infinite alternate}
+@keyframes tick{to{transform:translateX(-50%) rotate(-9deg)}}
+.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;display:grid;place-items:center}
+.hub-glow{position:absolute;width:96px;height:96px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.95) 0,rgba(255,240,170,.7) 35%,rgba(255,220,120,0) 70%);animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{transform:scale(1.12);opacity:.75}}
+.wheel-hub .pokeball{width:58px;height:58px;border-width:4px;box-shadow:inset -6px -6px 0 rgba(0,0,0,.15),0 0 0 3px #fff,0 4px 0 3px rgba(0,0,0,.25)}
+.wheel-hub .pokeball i{width:20px;height:20px;border-width:4px;box-shadow:0 0 6px #fff}
+.ribbon.plate{background:linear-gradient(#2c3f7c,#1b2a5c);border:3px solid #c9a94a;box-shadow:0 0 0 3px var(--k),0 4px 0 3px var(--k);border-radius:8px;display:flex;align-items:center;gap:8px;padding:9px 14px;margin-top:4px}
+.ribbon.plate em{font-style:normal;color:var(--yellow)}
+.ribbon.plate .spk{color:#ffe68a;font-size:9px;animation:blink 1.4s steps(2) infinite}
+.pb-mini{width:14px;height:14px;border-radius:50%;background:linear-gradient(var(--red) 0 44%,var(--k) 44% 56%,#fff 56%);border:2px solid var(--k);flex:none}
+.legend{display:flex;justify-content:center;flex-wrap:wrap;gap:16px;font-family:'PS2P';font-size:7px;margin-top:6px}
 .lg.g{color:#2e9e3d}.lg.r{color:#d0401c}.lg.k{color:var(--red-d)}
 
 /* ---------- evento ---------- */
@@ -253,3 +274,21 @@ b{font-weight:normal;color:var(--blue)}
 
 @media (max-width:440px){.logo-main{font-size:25px}.t-spr{width:72px;height:72px}.hpbox{width:190px}.back-img{width:130px;height:130px}.foe-av{width:88px;height:88px;font-size:48px;right:30px}.rec-grid{grid-template-columns:repeat(2,1fr)}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ---------- sprites de líderes e insígnias ---------- */
+.tr-img{image-rendering:pixelated;display:block}
+.avatar{overflow:hidden;background:radial-gradient(circle at 50% 35%,#fff,#d8e4f2)}
+.avatar .tr-img{width:64px;height:64px;margin-top:6px}
+.lc-badge .bd-img{width:38px;height:38px;image-rendering:pixelated;display:block;margin:0 auto;filter:drop-shadow(0 2px 0 rgba(0,0,0,.3))}
+.bd-img{image-rendering:pixelated}
+.badge-pop .bd-img.big{width:110px;height:110px;display:block;margin:0 auto}
+.badge-pop.tr .tr-img{width:120px;height:120px;margin:0 auto}
+.foe-av{overflow:hidden}.foe-av .foe-tr{width:112px;height:112px;margin-top:4px}
+.e4 span .tr-img{width:44px;height:44px;margin:0 auto}
+.tc-badges .hb{width:30px;height:30px}.tc-badges .hb img{width:24px;height:24px}
+.log-img{width:22px;height:22px}
+#dexfoot{display:flex;justify-content:flex-end;gap:8px;padding:10px 6px 0}
+#dexfoot b{width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2px var(--k)}
+#dexfoot .b{background:#5ab8ff}#dexfoot .r{background:#ff6b6b}#dexfoot .y{background:#ffd84a}#dexfoot .g{background:#5bd65b}
+.chip{background:#eef8f2}
+@media (max-width:440px){.foe-av .foe-tr{width:94px;height:94px}}

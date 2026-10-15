@@ -142,6 +142,17 @@ for var, folder in sets.items():
     print(var, len(d), "/", len(dex_names))
     sprite_js += "const %s = %s;\n" % (var, json.dumps(d, separators=(",", ":")))
 
+# ---------- líderes/treinadores (FRLG) e insígnias de Kanto ----------
+def folder_uris(folder):
+    p = os.path.join(BASE, "sprites", folder)
+    return {os.path.splitext(f)[0]: uri(os.path.join(p, f)) for f in sorted(os.listdir(p)) if f.endswith(".png")}
+TR, BD = folder_uris("trainers"), folder_uris("badges")
+assert len(BD) == 8, "faltam insígnias"
+for k in ["brock","misty","ltsurge","erika","koga","sabrina","blaine","giovanni","lorelei","bruno","agatha","lance","blue"]:
+    assert k in TR, "falta sprite do treinador " + k
+print("TRAINERS", len(TR), "BADGES", len(BD))
+sprite_js += "const TRAINERS = %s;\nconst BADGES = %s;\n" % (json.dumps(TR, separators=(",", ":")), json.dumps([BD[str(i)] for i in range(1, 9)], separators=(",", ":")))
+
 # ---------- fontes + CSS + UI ----------
 fonts = json.loads(rd(os.path.join(BASE, "fonts.json")))
 css = rd(os.path.join(BASE, "style_v2.css")).replace("__FONT_PS2P__", fonts["Press Start 2P"]).replace("__FONT_VT323__", fonts["VT323"])
@@ -151,7 +162,7 @@ html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
         '<title>Pokémon Carreira de Treinador — Kanto</title>\n<style>\n' + css + '\n</style>\n</head>\n<body>\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
-        '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main></div>\n'
+        '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main><div id="dexfoot"><b class="b"></b><b class="r"></b><b class="y"></b><b class="g"></b></div></div>\n'
         '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n</script>\n</body>\n</html>\n")
 io.open(OUT, "w", encoding="utf-8").write(html)
 print("wrote", OUT, len(html), "chars")

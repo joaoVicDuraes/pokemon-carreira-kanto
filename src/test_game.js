@@ -3,7 +3,7 @@ const fs=require('fs'),vm=require('vm'),path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 let js=html.split('<script>')[1].split('</script>')[0];
 js=js.replace(/G=newGame\(\); render\(\);\s*$/,'')+'\nthis.__x={get G(){return G;},set G(v){G=v;},greenRatio,GYM_EVENTS,DEX,WILD_POOL};';
-function el(){return {className:'',innerHTML:'',style:{},dataset:{},classList:{add(){},remove(){}},querySelector:()=>el(),querySelectorAll:()=>[]};}
+function el(){return {className:'',innerHTML:'',style:{},dataset:{},classList:{add(){},remove(){}},appendChild(){},querySelector:()=>el(),querySelectorAll:()=>[]};}
 const store={};
 const ctx={console,Math,JSON,Map,Set,Array,Object,String,Number,
   document:{getElementById:()=>el(),addEventListener(){},body:{},createTreeWalker:()=>({nextNode:()=>null})},

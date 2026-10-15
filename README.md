@@ -10,14 +10,20 @@ Abra `index.html` no navegador. É um arquivo único e funciona offline: fontes 
 
 ```
 index.html            jogo pronto (é o que o Vercel publica)
+og.png                prévia do link (WhatsApp, Discord, X)
+apple-touch-icon.png  ícone ao "Adicionar à Tela de Início" no iPhone
 src/
   assemble.py         gera ../index.html
   build_game.py       mapa espécie -> número da Pokédex
   game_template.html  lógica: Pokédex, tipos, ginásios, eventos por ginásio
+  extra_logic.js      pedra evolutiva, lendários, Victory Road, roleta sem repetição, troca
   ui_v2.js            interface e telas
+  polish.js           salvar/continuar, Pokédex entre carreiras, sons 8-bit
   style_v2.css        visual estilo GBA
   fonts.json          Press Start 2P + VT323 (OFL) em base64
-  sprites/            sprites FireRed/LeafGreen (frente, costas, shiny)
+  sprites/            sprites FireRed/LeafGreen (frente, costas, shiny), treinadores e insígnias
+  make_og.py          regenera og.png e apple-touch-icon.png (precisa do Chrome)
+  test_game.js        testes: node src/test_game.js
 ```
 
 ## Rebuild depois de editar

@@ -292,3 +292,54 @@ b{font-weight:normal;color:var(--blue)}
 #dexfoot .b{background:#5ab8ff}#dexfoot .r{background:#ff6b6b}#dexfoot .y{background:#ffd84a}#dexfoot .g{background:#5bd65b}
 .chip{background:#eef8f2}
 @media (max-width:440px){.foe-av .foe-tr{width:94px;height:94px}}
+
+/* ---------- botão de som ---------- */
+#mute{margin-left:auto;margin-right:4px;width:36px;height:36px;border-radius:50%;border:3px solid var(--k);background:#fff;font-size:16px;cursor:pointer;box-shadow:0 3px 0 var(--red-d);line-height:1}
+#mute:active{transform:translateY(2px);box-shadow:0 1px 0 var(--red-d)}
+#mute:focus-visible{outline:3px dashed #fff;outline-offset:2px}
+#mute + .dex-title{margin-left:0}
+
+/* ---------- iPhone: áreas seguras (notch / barra inferior) ---------- */
+body{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(40px,env(safe-area-inset-bottom));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+.btn,.scard,#mute,.rel{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+
+/* ---------- Pokédex ---------- */
+.dx-count{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-family:'PS2P';font-size:7px;margin:12px 2px 6px}
+.dx-count b{color:var(--red);font-size:10px}
+.dx-bar{height:10px;border:3px solid var(--k);border-radius:6px;background:#ddd;overflow:hidden}
+.dx-bar i{display:block;height:100%;background:linear-gradient(90deg,#58D080,#3BB54A)}
+.dx-help{font-size:17px;color:#666;margin:8px 2px 10px;line-height:1.1}
+.dx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px;max-height:60vh;overflow:auto;padding:2px;-webkit-overflow-scrolling:touch}
+.dx{position:relative;background:#fff;border:3px solid var(--k);border-radius:8px;text-align:center;padding:14px 2px 4px}
+.dx img{width:56px;height:56px;image-rendering:pixelated;display:block;margin:0 auto}
+.dx-n{position:absolute;left:4px;top:3px;font-family:'PS2P';font-size:6px;color:#999}
+.dx-nm{display:block;font-family:'PS2P';font-size:5.5px;line-height:1.4;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx.unk{background:#eceae0}.dx.unk img{filter:brightness(0);opacity:.22}.dx.unk .dx-nm{color:#aaa}
+.dx.seen{background:#f6f3e4}.dx.seen img{filter:grayscale(1);opacity:.6}
+.dx.got{background:linear-gradient(#fff,#eaf6ff)}
+.dx-ball{position:absolute;right:4px;top:3px;width:10px;height:10px;border-radius:50%;background:linear-gradient(var(--red) 0 44%,var(--k) 44% 56%,#fff 56%);border:1.5px solid var(--k)}
+.dx-sh{position:absolute;right:3px;bottom:16px;font-size:12px;font-style:normal}
+
+/* ---------- telas pequenas (Galaxy S9 = 360px, iPhone SE = 375px) ---------- */
+.starters-pick{grid-template-columns:repeat(3,minmax(0,1fr))}
+.scard{min-width:0;overflow:hidden}
+.scard img.big{width:100%;max-width:96px;height:auto;aspect-ratio:1}
+.chain img{width:min(30px,30%);height:auto;aspect-ratio:1}
+.scard .nm{overflow-wrap:anywhere}
+@media (max-width:400px){
+  body{padding-left:max(4px,env(safe-area-inset-left));padding-right:max(4px,env(safe-area-inset-right))}
+  #app{padding:0 8px 12px}
+  .scene{padding:10px}
+  .starters-pick{gap:5px}
+  .scard{padding:6px 2px 8px}
+  .scard .nm{font-size:6.5px}
+  .vsb{font-size:5px;margin:4px 1px 0}
+  .chain span{font-size:12px}
+  .lab{gap:10px;height:104px}
+  .dialog{font-size:20px;padding:10px 12px 12px}
+  .btn{font-size:9px;padding:11px 10px 11px 26px}
+  .hud-badges{gap:2px;padding:4px 5px}.hb{width:22px;height:22px}.hb img{width:17px;height:17px}
+  .chip{min-width:50px;padding:4px 6px}
+  .dex-title{font-size:8px}
+  .dx-grid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}.dx img{width:48px;height:48px}
+}

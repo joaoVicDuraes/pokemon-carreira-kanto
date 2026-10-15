@@ -158,11 +158,37 @@ fonts = json.loads(rd(os.path.join(BASE, "fonts.json")))
 css = rd(os.path.join(BASE, "style_v2.css")).replace("__FONT_PS2P__", fonts["Press Start 2P"]).replace("__FONT_VT323__", fonts["VT323"])
 ui = rd(os.path.join(BASE, "ui_v2.js"))
 
+polish = rd(os.path.join(BASE, "polish.js"))
+sprite_js += "const DEX_LIST = %s;\n" % json.dumps([[DEX_NUM[n], n] for n in dex_names], ensure_ascii=False, separators=(",", ":"))
+
+SITE = "https://pokemon-carreira-kanto.vercel.app/"
+DESC = ("Uma carreira de treinador Pokémon em Kanto: 8 ginásios, Elite Four, roleta de eventos, "
+        "151 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?")
+FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
+           "%3Ccircle cx='16' cy='16' r='14' fill='%23fff' stroke='%23111' stroke-width='3'/%3E"
+           "%3Cpath d='M2 16a14 14 0 0 1 28 0z' fill='%23e3350d' stroke='%23111' stroke-width='3'/%3E"
+           "%3Ccircle cx='16' cy='16' r='4.5' fill='%23fff' stroke='%23111' stroke-width='3'/%3E%3C/svg%3E")
+head = ('<meta name="description" content="%(d)s">\n'
+        '<meta name="theme-color" content="#E3350D">\n'
+        '<meta name="apple-mobile-web-app-capable" content="yes">\n'
+        '<meta name="mobile-web-app-capable" content="yes">\n'
+        '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+        '<meta name="apple-mobile-web-app-title" content="Carreira Kanto">\n'
+        '<link rel="icon" href="%(fav)s">\n<link rel="apple-touch-icon" href="%(s)sapple-touch-icon.png">\n'
+        '<meta property="og:type" content="website">\n<meta property="og:url" content="%(s)s">\n'
+        '<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto">\n'
+        '<meta property="og:description" content="%(d)s">\n'
+        '<meta property="og:image" content="%(s)sog.png">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
+        '<meta property="og:locale" content="pt_BR">\n'
+        '<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="%(s)sog.png">\n'
+        ) % {"d": DESC, "s": SITE, "fav": FAVICON}
+
 html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
-        '<title>Pokémon Carreira de Treinador — Kanto</title>\n<style>\n' + css + '\n</style>\n</head>\n<body>\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n'
+        '<title>Pokémon Carreira de Treinador — Kanto</title>\n' + head + '<style>\n' + css + '\n</style>\n</head>\n<body>\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
+        '<button id="mute" data-act="mute" aria-label="Desligar som">🔊</button>'
         '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main><div id="dexfoot"><b class="b"></b><b class="r"></b><b class="y"></b><b class="g"></b></div></div>\n'
-        '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n</script>\n</body>\n</html>\n")
+        '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n" + polish + "\n</script>\n</body>\n</html>\n")
 io.open(OUT, "w", encoding="utf-8").write(html)
 print("wrote", OUT, len(html), "chars")

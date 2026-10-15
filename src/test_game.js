@@ -2,13 +2,13 @@
 const fs=require('fs'),vm=require('vm'),path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 let js=html.split('<script>')[1].split('</script>')[0];
-js=js.replace(/G=newGame\(\); render\(\);\s*$/,'')+'\nthis.__x={get G(){return G;},set G(v){G=v;},greenRatio,GYM_EVENTS,DEX,WILD_POOL};';
-function el(){return {className:'',innerHTML:'',style:{},dataset:{},classList:{add(){},remove(){}},appendChild(){},querySelector:()=>el(),querySelectorAll:()=>[]};}
+js=js.replace(/G=newGame\(\); render\(\);\s*$/,'')+'\nthis.__x={get G(){return G;},set G(v){G=v;},greenRatio,GYM_EVENTS,DEX,WILD_POOL,DEX_LIST};';
+function el(){return {className:'',innerHTML:'',style:{},dataset:{},classList:{add(){},remove(){}},appendChild(){},setAttribute(){},isConnected:false,querySelector:()=>el(),querySelectorAll:()=>[]};}
 const store={};
 const ctx={console,Math,JSON,Map,Set,Array,Object,String,Number,
   document:{getElementById:()=>el(),addEventListener(){},body:{},createTreeWalker:()=>({nextNode:()=>null})},
   NodeFilter:{SHOW_TEXT:4},window:{matchMedia:()=>({matches:true}),scrollTo(){}},
-  localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v;}},
+  localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v;},removeItem:k=>{delete store[k];}},
   requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 0;},clearInterval(){},setInterval:()=>0};
 vm.createContext(ctx);vm.runInContext(js,ctx);
 const X=ctx.__x,act=ctx.act,mon=ctx.mon;
@@ -34,7 +34,7 @@ console.log('eventos executados:',ran);
 {const g=ctx.newGame();g.team=[mon('Squirtle',10)];X.G=g;const b=g.team[0].lv;ctx.stoneEvent();ok(g.team[0].lv===b+5,'fallback sem candidato devia dar +5');}
 
 // 3) soltar: pede confirmação, não gasta decisão, inicial protegido
-{X.G=ctx.newGame();act('new');act('choose','Bulbasaur');const G=X.G;G.team.push(mon('Magikarp',5),mon('Magikarp',5));G.step=1;
+{X.G=ctx.newGame();ctx.clearSave();act('new');act('choose','Bulbasaur');const G=X.G;G.team.push(mon('Magikarp',5),mon('Magikarp',5));G.step=1;
  act('release','1');ok(G.team.length===3&&G.releaseAsk===1,'release deve só pedir confirmação');
  act('releaseNo');ok(G.team.length===3&&G.releaseAsk==null,'cancelar não solta');
  act('release','2');act('releaseYes','2');ok(G.team.length===2&&G.step===1,'soltar remove 1 e não gasta decisão');
@@ -42,7 +42,7 @@ console.log('eventos executados:',ran);
  ok(G.log.some(l=>l.text.startsWith('Soltou')),'soltar vai pro diário');}
 
 // 3b) troca com time cheio
-{X.G=ctx.newGame();act('new');act('choose','Charmander');const G=X.G;
+{X.G=ctx.newGame();ctx.clearSave();act('new');act('choose','Charmander');const G=X.G;
  for(let i=0;i<5;i++)G.team.push(mon('Magikarp',5));
  const step0=G.step; act('search');
  ok(G.team.length===6 && G.pendingSwap,'time cheio deve gerar troca pendente');
@@ -73,12 +73,34 @@ for(let gi=0;gi<=8;gi++){
   if(gi<8){ g.gymIndex=gi+1; ok(ctx.usedLabels().length===0,'lista de eventos usados deve zerar no próximo ginásio'); }
 }
 
+// 3d) salvar/continuar, Pokédex, Victory Road
+{ok(X.GYM_EVENTS.length===9 && X.GYM_EVENTS[8].green.some(e=>e.lb==='Pedra evolutiva') && X.GYM_EVENTS[8].green.some(e=>e.lb==='Lendário'),'Victory Road com eventos próprios, pedra e lendário');
+ ok(X.GYM_EVENTS[7].green.some(e=>e.lb==='Lendário'),'lendário continua no ginásio 8');
+ ctx.clearSave(); X.G=ctx.newGame(); act('new'); act('choose','Squirtle'); let G=X.G;
+ ok(ctx.loadSave() && ctx.loadSave().starter==='Squirtle','hub deve salvar a carreira');
+ G.team.push(mon('Pidgey',9)); G.day=7; G.step=1; G.pendingRoll={lb:'Enxame Beedrill',good:false}; ctx.saveGame();
+ X.G=ctx.newGame(); act('title'); ok(ctx.resumeGame(),'resumeGame com save');
+ G=X.G; ok(G.team.length===2 && G.day===7 && G.pendingRoll.lb==='Enxame Beedrill','save restaura time, dia e o sorteio pendente');
+ G.phase='roulette'; ctx.render(); ok(X.G.lastResult && X.G.lastResult.title.includes('Beedrill') && !X.G.pendingRoll,'roleta retomada usa o MESMO sorteio gravado');
+ ok(ctx.usedLabels().includes('Enxame Beedrill'),'evento retomado sai da roda');
+ X.G.pendingSwap=mon('Dragonite',40); X.G.phase='event'; ctx.saveGame(); X.G=ctx.newGame(); ctx.resumeGame();
+ ok(X.G.phase==='event' && X.G.pendingSwap && X.G.lastResult,'troca pendente sobrevive ao recarregar'); ctx.render();
+ act('swapSkip'); ok(!X.G.pendingSwap,'troca retomada resolve');
+ X.G.phase='win'; X.G.battle={isElite:false}; ctx.saveGame(); X.G=ctx.newGame(); ctx.resumeGame(); ok(X.G.phase==='hub','vitória retomada volta ao hub');
+ X.G.battle=null; X.G.phase='gameover'; ctx.render(); ok(!ctx.loadSave(),'fim de carreira apaga o save');
+ act('choose','Bulbasaur'); act('title'); act('new'); ok(X.G.confirmNew && X.G.phase==='title','novo jogo com save pede confirmação');
+ act('newNo'); ok(!X.G.confirmNew && ctx.loadSave(),'cancelar mantém o save'); act('new'); act('new'); ok(X.G.phase==='pick' && !ctx.loadSave(),'confirmar apaga e começa');
+ const k0=ctx.dexCounts().c; ok(k0>=3,'Pokédex registra quem passou pelo time ('+k0+')');
+ ok(ctx.dexRegister(mon('Mew',40))===true && ctx.dexRegister(mon('Mew',40))===false,'registro novo só conta uma vez');
+ ok(X.DEX_LIST.length===151 && X.DEX_LIST[0][1]==='Bulbasaur' && X.DEX_LIST[150][1]==='Mew','lista da Pokédex 1-151');
+ X.G=ctx.newGame(); X.G.phase='dex'; ctx.render(); ok(true,'tela da Pokédex renderiza');}
+
 // 4) carreiras completas
 const POL={roleta:()=> 'roll',esperto:()=>{const G=X.G;if(G.team.length<4)return 'search';return X.greenRatio()>=0.5?'roll':'train';}};
 for(const pol of Object.keys(POL)){
   const N=3000;let liga=0,champ=0,err=0;const seen=new Set();
   for(let i=0;i<N;i++){try{
-    X.G=ctx.newGame();act('new');act('choose',['Bulbasaur','Charmander','Squirtle'][i%3]);
+    X.G=ctx.newGame();ctx.clearSave();act('new');act('choose',['Bulbasaur','Charmander','Squirtle'][i%3]);
     for(let s=0;s<500;s++){const G=X.G,p=G.phase;G.team.forEach(m=>seen.add(m.species));
       if(p==='gameover'){if(G.gymIndex>=8)liga++;break;} if(p==='champion'){liga++;champ++;break;}
       if(p==='hub'){if(G.step>=3)act(G.gymIndex>=8?'league':'challenge');else{let a=POL[pol]();if(a==='search'&&G.team.length>=6)a='roll';act(a);}}

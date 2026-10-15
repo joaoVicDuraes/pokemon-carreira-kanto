@@ -38,7 +38,29 @@ function legendEvent(){
   const where = {Moltres:"No topo da Victory Road, chamas iluminam a caverna",Mewtwo:"No fundo da Caverna Cerulean, um olhar frio te encara",Mew:"Uma pequena silhueta rosa brinca entre as árvores e decide te seguir"}[s];
   return {title:"Encontro Lendário!", text:`${where}... <span class="reward">${s} (Lv ${m.lv}) entrou para o time!</span>`, highlight:m};
 }
-GYM_EVENTS[GYM_EVENTS.length-1].green.push({ic:"🌟",lb:"Lendário",fn:legendEvent});
+GYM_EVENTS[7].green.push({ic:"🌟",lb:"Lendário",fn:legendEvent});
+
+/* Victory Road: conjunto próprio (índice 8). Os valores aqui já são os reais (sem escala do assemble). */
+function vrCaveMon(){
+  const pool=["Machoke","Graveler","Marowak","Onix","Golbat","Rhyhorn"], s=pool[Math.floor(Math.random()*pool.length)];
+  const m=addMon(s,36);
+  return {title:"Morador da Victory Road", text:`No fundo da caverna, um <b>${s}</b> selvagem (Lv ${m.lv}) testa sua força... e decide te acompanhar até a Liga!`, highlight:m};
+}
+GYM_EVENTS.push({
+  green:[
+    {ic:"🔥",lb:"Chama de Moltres",fn:()=>{const m=addMon("Moltres",42);return{title:"A Chama da Victory Road",text:`Labaredas iluminam a caverna: é <b>Moltres</b>! Depois de uma batalha feroz, <span class="reward">Moltres (Lv ${m.lv}) entrou para o time!</span>`,highlight:m};}},
+    {ic:"🎓",lb:"Ás da Victory Road",fn:()=>{lvlAll(7);return{title:"Duelo com o Ás",text:`Um Treinador Ás desafia você na entrada da caverna. Vitória suada! <span class="reward">Time +7 níveis</span>.`,highlight:null};}},
+    {ic:"🍬",lb:"Rare Candy escondido",fn:()=>{const t=strongest();lvlOne(t,10);return{title:"Rare Candy escondido",text:`Atrás de uma pedra empurrada com Strength: um saco de Rare Candies! <span class="reward">${t.species} +10 níveis</span>.`,highlight:t};}},
+    {ic:"🪨",lb:"Morador da caverna",fn:vrCaveMon},
+    {ic:"🌟",lb:"Lendário",fn:legendEvent},
+  ],
+  red:[
+    {ic:"🪨",lb:"Enigma das pedras",fn:()=>{dropLvAll(2);return{title:"Enigma das Pedras",text:`Horas empurrando pedregulhos com Strength até achar o caminho. O time chega cansado: <b>-2 níveis</b> em todos.`,highlight:null};}},
+    {ic:"🦇",lb:"Golbats na escuridão",fn:()=>{const t=strongest();dropLvOne(t,4);return{title:"Golbats na Escuridão",text:`Um bando de Golbat ataca no breu. <b>${t.species}</b> protege o time e se fere: <b>-4 níveis</b>.`,highlight:t};}},
+    {ic:"⛏️",lb:"Desmoronamento",loss:true,fn:()=>{const g=loseWeakest();if(!g)return{title:"Desmoronamento",text:`O teto da caverna cede! Você e seu inicial escapam por pouco — ninguém se perdeu.`,highlight:null};return{title:"Desmoronamento",text:`O teto da caverna cede e separa o time. <b>${g.species}</b> fica do outro lado dos escombros: perdeu ${g.species}.`,highlight:null};}},
+  ]
+});
+GYM_EVENTS[8].green.splice(4,0,{ic:"💎",lb:"Pedra evolutiva",fn:stoneEvent});
 
 /* Fóssil do Mt. Moon (roleta rumo a Cerulean): Omanyte ou Kabuto */
 function fossilEvent(){

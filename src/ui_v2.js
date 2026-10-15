@@ -44,7 +44,9 @@ const WHEEL_ICON = {
   "Protótipo do Presidente":"T:scientist","Sombra de Lavender":"P:Gengar","Emboscada Giovanni":"T:giovanni","Controle mental":"P:Hypno",
   "Ressurreição":"P:Aerodactyl","Lenda Seafoam":"P:Articuno","Ladrão na Mansão":"T:burglar","Quiz errado":"T:blaine","Correnteza Seafoam":"P:Tentacruel",
   "Usina Elétrica":"P:Zapdos","Duelo com o Rival":"T:blue","Deserção Rocket":"P:Dragonite","Ultimato Rocket":"T:rocketgrunt","Fissure":"P:Dugtrio",
-  "Labirinto teleporte":"P:Kadabra","Lendário":"P:Mewtwo","Fóssil":"P:Omanyte","Frustração Safari":"P:Tauros"
+  "Labirinto teleporte":"P:Kadabra","Lendário":"P:Mewtwo","Fóssil":"P:Omanyte","Frustração Safari":"P:Tauros",
+  "Chama de Moltres":"P:Moltres","Ás da Victory Road":"T:acetrainer","Morador da caverna":"T:hiker","Enigma das pedras":"T:blackbelt",
+  "Golbats na escuridão":"P:Golbat","Desmoronamento":"P:Onix"
 };
 function wheelIconSrc(ev){
   const k=WHEEL_ICON[ev.lb]; if(!k) return null;
@@ -81,6 +83,8 @@ function postProcess(diff){
   diff.caught.forEach(m=>{ if(m.shiny) G.stats.shinies++; logAdd('catch','🟣',`Capturou ${m.species}${m.shiny?' ✨ SHINY':''} (Lv ${m.lv})`); });
   diff.evos.forEach(([a,b])=>logAdd('evo','✨',`${a} evoluiu para ${b}`));
   diff.lost.forEach(l=>logAdd('bad','💔',`Perdeu ${l.species} (Lv ${l.lv})`));
+  diff.newDex=[]; G.team.forEach(m=>{ if(dexRegister(m)) diff.newDex.push(m.species); });
+  if(diff.newDex.length) logAdd('catch','📕',`Novo na Pokédex: ${diff.newDex.join(', ')}`);
 }
 
 /* ---------- estado novo ---------- */
@@ -151,7 +155,7 @@ function scene(html, cls, tw){
   if(el && tw!=null) typewrite(el, tw);
 }
 function renderHUD(){
-  if(["title","how","pick"].includes(G.phase)){ $hud.innerHTML=""; return; }
+  if(["title","how","pick","dex"].includes(G.phase)){ $hud.innerHTML=""; return; }
   const badges=GYMS.map((g,i)=>`<span class="hb ${i<G.gymIndex?'on':''}" title="${BADGE_NAMES[i]} — ${g.leader}">${badgeImg(i)}</span>`).join("")
     + `<span class="hb trophy ${G.phase==='champion'?'on':''}" title="Campeão da Liga">🏆</span>`;
   $hud.innerHTML=`<div class="hud-badges" role="img" aria-label="${G.gymIndex} de 8 insígnias">${badges}</div>
@@ -229,11 +233,16 @@ function title(){
   const rec = r.runs
     ? `<div class="rec-grid"><div><span>CARREIRAS</span><b>${r.runs}</b></div><div><span>RECORDE</span><b>${r.bestBadges||0}/8</b></div><div><span>CAMPEÃO</span><b>${r.champs||0}×</b></div><div><span>SHINIES</span><b>${r.shinies||0}</b></div></div>`
     : `<div class="rec-empty">Nenhuma carreira ainda. Sua lenda começa agora.</div>`;
+  const sv=loadSave(), dk=dexCounts();
+  const main = G.confirmNew
+    ? menu(btn('new','SIM, COMEÇAR DO ZERO','A carreira salva será apagada',{primary:true}), btn('newNo','NÃO, VOLTAR'))
+    : sv ? menu(btn('continue','▶ CONTINUAR CARREIRA', saveSummary(sv), {primary:true}), btn('new','NOVO JOGO','Apaga a carreira salva'), btn('dex',`📕 POKéDEX ${dk.c}/151`,'Tudo que você já registrou em todas as carreiras'), btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'))
+    : menu(btn('new','NOVO JOGO','Comece em Pallet Town com seu primeiro parceiro',{primary:true}), btn('dex',`📕 POKéDEX ${dk.c}/151`,'Tudo que você já registrou em todas as carreiras'), btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'));
   scene(`<div class="title-sky"><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
       <div class="logo"><div class="logo-main">POKéMON</div><div class="logo-sub">CARREIRA DE TREINADOR</div><div class="logo-ed">EDIÇÃO KANTO · GEN 1</div></div>
       <div class="pokeball title-ball"><i></i></div><div class="starters">${st}</div><div class="grass"></div></div>
     <div class="title-menu"><div class="press">— PRESSIONE START —</div>
-      ${menu(btn('new','NOVO JOGO','Comece em Pallet Town com seu primeiro parceiro',{primary:true}), btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'))}
+      ${main}
       <div class="rec-card"><div class="rec-h">🏆 SEUS RECORDES</div>${rec}</div>
       <div class="foot">${Object.keys(DEX).length} POKéMON · 8 GINÁSIOS · ELITE FOUR<br>FAN GAME · SPRITES FIRERED/LEAFGREEN · TECLAS 1-6 ESCOLHEM</div></div>`, 'title');
 }
@@ -245,7 +254,10 @@ function how(){
     ['🏋️','TREINAR','+2 níveis no time inteiro. Seguro, mas rende menos que a roleta na média.'],
     ['🔎','PROCURAR','Captura garantida de um Pokémon selvagem. Ótimo para cobrir tipos.'],
     ['⚔️','TIPOS','Seu melhor atacante contra o tipo do líder define o multiplicador: ×2 com vantagem, ×0.5 com desvantagem.'],
-    ['🛤️','VICTORY ROAD','Depois das 8 insígnias, mais 3 decisões antes de 5 batalhas seguidas na Liga.'],
+    ['🛤️','VICTORY ROAD','Depois das 8 insígnias, mais 3 decisões com eventos próprios da caverna (Moltres mora lá) antes de 5 batalhas seguidas na Liga.'],
+    ['🎰','RODA SEM REPETIÇÃO','O evento que sai some da roda até o próximo ginásio. A chance de perder Pokémon continua rara.'],
+    ['💾','SALVA SOZINHO','A carreira é salva a cada passo. Fechou a aba? É só tocar em CONTINUAR.'],
+    ['📕','POKéDEX','Todo Pokémon que passa pelo seu time fica registrado para sempre, em todas as carreiras.'],
     ['💀','PERMADEATH','Perdeu para um líder ou para a Elite Four? Fim da carreira. Se a Rocket levar seu último Pokémon, também.'],
     ['✨','SHINY','1 em cada 40 Pokémon nasce shiny. Raro, brilhante e vai para os seus recordes.'],
   ].map(c=>`<div class="how-card"><div class="ic">${c[0]}</div><div><h4>${c[1]}</h4><p>${c[2]}</p></div></div>`).join("");
@@ -302,16 +314,18 @@ function hubVR(){
 /* ---------- roleta circular ---------- */
 let SPIN=0;
 function rouletteScreen(){
-  const tok=++SPIN, picked=rollGymEvent(), live=wheelSectors();
+  if(!G.pendingRoll){ const p=rollGymEvent(); G.pendingRoll={lb:p.ev.lb, good:p.good}; saveGame(); }
+  const tok=++SPIN, picked=resolveRoll(G.pendingRoll), live=wheelSectors();
   const gr=live.filter(s=>s.good).reduce((a,s)=>a+s.frac,0);   // chance real de sorte nesta roda
   const sectors=live.map(s=>({ev:s.ev, frac:s.frac,
     col: s.good ? (s.i%2?'url(#gG1)':'url(#gG2)') : s.ev.loss ? 'url(#gL)' : (s.i%2?'url(#gR1)':'url(#gR2)')}));
   const gone=usedLabels().length;
   const R=112, C=135, pol=(r,deg)=>{ const a=deg*Math.PI/180; return [C+r*Math.cos(a), C+r*Math.sin(a)]; };
   sectors.forEach(s=>{ if(s.ev.lb==='Pedra evolutiva') s.col='url(#gS)'; });
-  let ang=-90, tStart=-90, tSweep=10, paths="", icons="", hitIdx=0;
+  let ang=-90, tStart=-90, tSweep=10, paths="", icons="", hitIdx=0; const starts=[];
   sectors.forEach((s,idx)=>{
-    const sw=s.frac*360, st=ang; ang+=sw;
+    const sw=s.frac*360, st=ang; ang+=sw; starts.push(st);
+    { const k=WHEEL_ICON[s.ev.lb]; if(k && k[0]==='P') dexSeen(k.slice(2)); }
     if(s.ev===picked.ev){ tStart=st; tSweep=sw; hitIdx=idx; }
     const p1=pol(R,st), p2=pol(R,st+sw);
     paths+=`<path class="sec" data-i="${idx}" d="M${C},${C} L${p1[0].toFixed(1)},${p1[1].toFixed(1)} A${R},${R} 0 ${sw>180?1:0} 1 ${p2[0].toFixed(1)},${p2[1].toFixed(1)} Z" fill="${s.col}" stroke="#3a1f10" stroke-width="2" stroke-linejoin="round"/>`;
@@ -319,7 +333,7 @@ function rouletteScreen(){
     if(sz){
       const l=pol(R*0.64, st+sw/2), src=wheelIconSrc(s.ev);
       icons += src
-        ? `<image href="${src}" x="${(l[0]-sz/2).toFixed(1)}" y="${(l[1]-sz/2).toFixed(1)}" width="${sz}" height="${sz}" filter="url(#ol)" style="image-rendering:pixelated"/>`
+        ? `<image href="${src}" x="${(l[0]-sz/2).toFixed(1)}" y="${(l[1]-sz/2).toFixed(1)}" width="${sz}" height="${sz}" filter="url(#ol)" image-rendering="optimizeSpeed" style="image-rendering:pixelated"/>`
         : `<text x="${l[0].toFixed(1)}" y="${l[1].toFixed(1)}" font-size="${Math.round(sz*0.55)}" text-anchor="middle" dominant-baseline="central" filter="url(#ol)">${s.ev.ic}</text>`;
     } else if(s.ev.loss && sw>=3){
       const l=pol(R-14, st+sw/2);
@@ -350,11 +364,25 @@ function rouletteScreen(){
   const go=()=>{ if(tok===SPIN && G.phase==='roulette') applyPicked(picked); };
   if(REDUCE()){ wheel.style.transform=`rotate(${final%360}deg)`; hit(); setTimeout(go,700); return; }
   wheel.style.transition='none'; wheel.style.transform='rotate(0deg)';
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ wrap.classList.add('spinning'); wheel.style.transition='transform 4.2s cubic-bezier(.1,.7,.1,1)'; wheel.style.transform=`rotate(${final}deg)`; }));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ wrap.classList.add('spinning'); wheel.style.transition='transform 4.2s cubic-bezier(.1,.7,.1,1)'; wheel.style.transform=`rotate(${final}deg)`; try{ SFX.spin(); spinTicks(wheel, starts, tok); }catch(e){} }));
   setTimeout(()=>{ if(tok===SPIN) hit(); }, 4250);
   setTimeout(go,5200);
 }
+/* "tec-tec" da roleta: um tique cada vez que uma divisória passa pelo ponteiro */
+function spinTicks(wheel, starts, tok){
+  if(typeof getComputedStyle!=='function' || starts.length<2) return;
+  let last=null;
+  const at=rot=>{ const a=((-90-rot-(-90))%360+360)%360; let i=0; starts.forEach((s,k)=>{ if(((s+90)%360+360)%360<=a) i=k; }); return i; };
+  const step=()=>{
+    if(tok!==SPIN || !wheel.isConnected || G.phase!=='roulette') return;
+    const m=getComputedStyle(wheel).transform;
+    if(m && m!=='none'){ const v=m.slice(m.indexOf('(')+1,-1).split(','); const rot=Math.atan2(+v[1],+v[0])*180/Math.PI; const i=at(rot); if(last!==null && i!==last) SFX.tick(); last=i; }
+    if(wheel.parentNode && wheel.parentNode.classList.contains('spinning')) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
 function applyPicked(picked){
+  G.pendingRoll=null;
   const before=snap(); G.day++; G.step++; markUsed(picked.ev);
   const res=picked.ev.fn(G);
   if(G.pendingRocketGameOver && G.team.length) G.team.pop();   // a Rocket leva o último parceiro
@@ -408,6 +436,7 @@ function eventScreen(){
   let extra="";
   r.diff.evos.forEach(([a,b])=>{ if(!r.text.includes(b)) extra+=`\n✨ <span class="reward">${a} evoluiu para ${b}!</span>`; });
   r.diff.caught.forEach(m=>{ if(m.shiny) extra+=`\n✨ <span class="reward">${m.species} é SHINY! Que sorte rara!</span>`; });
+  if(r.diff.newDex && r.diff.newDex.length) extra+=`\n📕 <span class="reward">Novo na Pokédex: ${r.diff.newDex.join(', ')}!</span>`;
   if(nw) extra+=`\n<span class="bad">Mas seu time está cheio!</span> Escolha abaixo quem sai pra ${nw.species} entrar, ou deixe-o ir.`;
   if(r.swapNote) extra+=`\n${r.swapNote}`;
   const rib = r.kind==='train' ? ['info','🏋️ DIA DE TREINO'] : r.kind==='search' ? ['good','🔎 CAPTURA!'] : r.good ? ['good','★ SORTE NA ESTRADA ★'] : ['bad','⚠ PERIGO NA ESTRADA ⚠'];
@@ -451,8 +480,10 @@ function runBattle(me){
     setBar(document.getElementById('hpF'), b.win?0:left);
     setBar(document.getElementById('hpM'), b.win?left:0);
     const hit=document.getElementById(b.win?'avF':'avM'); if(hit) hit.classList.add('shake');
+    try{ SFX.hit(); }catch(e){}
   });
   T(3300,()=>{
+    try{ SFX.faint(); }catch(e){}
     const loser=document.getElementById(b.win?'avF':'avM'); if(loser){ loser.classList.remove('shake'); loser.classList.add('faint'); }
     typewrite(document.getElementById('tw'), b.win ? `${b.foe.leader} foi derrotad${FEM(b.foe)?'a':'o'}!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
   });
@@ -524,7 +555,7 @@ function gameOverScreen(){
     : `Você perdeu para ${G.battle?G.battle.foe.leader:'o desafio'}. Em Kanto não existe revanche oficial: a carreira termina aqui.`;
   scene(`<div class="over-title">FIM DA CARREIRA</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="dialog" id="tw"></div>${trainerCard(false)}${logHTML()}
-    ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), btn('title','🏠 TELA INICIAL'))}`, 'over',
+    ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
     cause+'\nToda lenda também já perdeu. Levante e tente de novo.');
 }
 function hofScreen(){
@@ -533,18 +564,25 @@ function hofScreen(){
   const conf=Array.from({length:24},(_,i)=>`<i class="conf" style="left:${(i*41)%100}%;background:${['#E3350D','#2A75BB','#FFCB05','#3BB54A'][i%4]};animation-delay:${(i%8)*0.35}s;pointer-events:none"></i>`).join("");
   scene(`${conf}<div class="hof-title">HALL DA FAMA</div><div class="ribbon gold">CAMPEÃO DE KANTO!</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), btn('title','🏠 TELA INICIAL'))}`, 'hof',
+    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
     'Seu Rival estende a mão: "Me enganei sobre você. Kanto tem um novo Campeão."\nSeu time entra para o Hall da Fama!');
 }
 
 /* =====================================================================
    ROTEADOR + ENTRADA
    ===================================================================== */
-const SCREENS={title, how, pick:pickScreen, hub, roulette:rouletteScreen, event:eventScreen, battle:battleScreen, win:winScreen, elite:eliteScreen, champion:hofScreen, gameover:gameOverScreen};
-function render(){ (SCREENS[G.phase]||title)(); try{ window.scrollTo(0,0); }catch(e){} }
+const SCREENS={title, how, pick:pickScreen, hub, roulette:rouletteScreen, event:eventScreen, battle:battleScreen, win:winScreen, elite:eliteScreen, champion:hofScreen, gameover:gameOverScreen, dex:dexScreen};
+function render(){ (SCREENS[G.phase]||title)(); try{ window.scrollTo(0,0); }catch(e){} afterRender(); }
 function act(id, arg){
   switch(id){
-    case 'new': G=newGame(); G.phase='pick'; break;
+    case 'new':
+      if(loadSave() && !G.confirmNew){ G.confirmNew=true; G.phase='title'; break; }
+      clearSave(); G=newGame(); G.phase='pick'; break;
+    case 'newNo': G.confirmNew=false; break;
+    case 'continue': if(!resumeGame()) G=newGame(); break;
+    case 'dex': G.phase='dex'; break;
+    case 'dexBack': G=newGame(); break;
+    case 'mute': SFX.toggle(); setMuteBtn(); return;
     case 'how': G.phase='how'; break;
     case 'title': G=newGame(); break;
     case 'restart': G=newGame(); G.phase='pick'; break;
@@ -571,12 +609,13 @@ function act(id, arg){
       if(!s) return;
       if(s.in.shiny) G.stats.shinies++;
       logAdd('catch','🔄',`${s.in.species}${s.in.shiny?' ✨':''} (Lv ${s.in.lv}) entrou no lugar de ${s.out.species} (Lv ${s.out.lv})`);
+      const isNewDex=dexRegister(s.in); if(isNewDex) logAdd('catch','📕',`Novo na Pokédex: ${s.in.species}`);
       r.diff=diffOf(r.before||new Map()); r.highlight=s.in;
-      r.swapNote=`🔄 <span class="reward">${s.in.species} entrou no time!</span> ${s.out.species} foi solto na natureza.`;
+      r.swapNote=`🔄 <span class="reward">${s.in.species} entrou no time!</span> ${s.out.species} foi solto na natureza.${isNewDex?`\n📕 <span class="reward">Novo na Pokédex: ${s.in.species}!</span>`:''}`;
       break;
     }
     case 'swapSkip': {
-      const r=G.lastResult, nw=skipSwap();
+      const r=G.lastResult, nw=skipSwap(); if(nw) dexSeen(nw.species);
       if(nw){ r.diff=diffOf(r.before||new Map()); r.swapNote=`Você deixa ${nw.species} seguir livre, mas a tentativa de captura rendeu experiência: <span class="reward">+5 níveis no time</span>.`; r.highlight=null; logAdd('bad','🍃',`Deixou ${nw.species} (Lv ${nw.lv}) ir e o time ganhou +5 níveis`); }
       break;
     }
@@ -587,7 +626,7 @@ function act(id, arg){
 }
 document.addEventListener('click', e=>{
   const b=e.target.closest && e.target.closest('[data-act]');
-  if(b && !b.disabled) act(b.dataset.act, b.dataset.arg);
+  if(b && !b.disabled){ try{ SFX.blip(); }catch(err){} act(b.dataset.act, b.dataset.arg); }
 });
 document.addEventListener('keydown', e=>{
   if(e.ctrlKey||e.metaKey||e.altKey) return;
@@ -596,4 +635,4 @@ document.addEventListener('keydown', e=>{
     const b=list[Number(e.key)-1]; if(b){ e.preventDefault(); b.click(); }
   } else if((e.key==='Enter'||e.key===' ') && TW && document.activeElement===document.body){ e.preventDefault(); TW.finish(); }
 });
-G=newGame(); render();
+

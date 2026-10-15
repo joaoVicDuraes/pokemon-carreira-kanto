@@ -95,6 +95,12 @@ for(let gi=0;gi<=8;gi++){
  ok(X.DEX_LIST.length===151 && X.DEX_LIST[0][1]==='Bulbasaur' && X.DEX_LIST[150][1]==='Mew','lista da Pokédex 1-151');
  X.G=ctx.newGame(); X.G.phase='dex'; ctx.render(); ok(true,'tela da Pokédex renderiza');}
 
+// 3e) lobby de regiões (Johto ainda em construção não pode iniciar)
+{X.G=ctx.newGame(); act('regNext'); ok(ctx.eval?true:true,'');
+ const J=X.G; ctx.render(); act('new'); ok(X.G.phase==='title','região em construção não inicia carreira');
+ act('regPrev'); act('new'); act('new'); ok(X.G.phase==='pick' && X.G.team.length===0,'de volta a Kanto, novo jogo funciona');
+ ctx.clearSave();}
+
 // 4) carreiras completas
 const POL={roleta:()=> 'roll',esperto:()=>{const G=X.G;if(G.team.length<4)return 'search';return X.greenRatio()>=0.5?'roll':'train';}};
 for(const pol of Object.keys(POL)){

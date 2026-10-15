@@ -26,7 +26,10 @@ function front(m, cls){
 }
 /* líderes e treinadores (sprites FRLG) e insígnias de Kanto */
 const FEM = f => ["Misty","Erika","Sabrina","Lorelei","Agatha"].includes(f.leader);
-function trainerKey(name){ return /Rival|Champion/.test(name) ? 'blue' : name.toLowerCase().replace(/[^a-z]/g,''); }
+function trainerKey(name){
+  const k = /Rival|Champion/.test(name) ? RT.rivalChamp : name.toLowerCase().replace(/[^a-z]/g,'');
+  return TRAINERS[RT.trainerPrefix+k] ? RT.trainerPrefix+k : k;
+}
 function leaderImg(foe, cls){
   const src = TRAINERS[trainerKey(foe.leader)];
   return src ? `<img class="tr-img ${cls||''}" src="${src}" alt="${foe.leader}">` : `<span class="emo">${foe.e}</span>`;
@@ -228,23 +231,32 @@ function partyHTML(diff, opts){
    TELAS
    ===================================================================== */
 function title(){
-  const r=loadRec();
-  const st=STARTERS.map((s,i)=>`<img class="t-spr hop" style="animation-delay:${i*0.25}s" src="${SPRITES[s]}" alt="${s}">`).join("");
+  const LR=REGIONS[LOBBY], ready=LR.ready;
+  const srcs = ready ? STARTERS.map(s=>[s,SPRITES[s]]) : (LOBBY_PREVIEW[LOBBY]||[]).map((u,i)=>[['Chikorita','Cyndaquil','Totodile'][i],u]);
+  const st=srcs.map(([s,u],i)=>`<img class="t-spr hop" style="animation-delay:${i*0.25}s" src="${u}" alt="${s}">`).join("");
+  const r=ready?loadRec():{};
   const rec = r.runs
     ? `<div class="rec-grid"><div><span>CARREIRAS</span><b>${r.runs}</b></div><div><span>RECORDE</span><b>${r.bestBadges||0}/8</b></div><div><span>CAMPEÃO</span><b>${r.champs||0}×</b></div><div><span>SHINIES</span><b>${r.shinies||0}</b></div></div>`
     : `<div class="rec-empty">Nenhuma carreira ainda. Sua lenda começa agora.</div>`;
-  const sv=loadSave(), dk=dexCounts();
-  const main = G.confirmNew
+  const sv=ready?loadSave():null, dk=ready?dexCounts():{c:0}, tot=ready?DEX_LIST.length:251;
+  const dexBtn=btn('dex',`📕 POKéDEX ${dk.c}/${tot}`,`Tudo que você já registrou em ${LR.RT.name}`);
+  const main = !ready
+    ? menu(btn('noop',`🚧 ${LR.RT.name.toUpperCase()} EM CONSTRUÇÃO`,'A Gen 2 está sendo preparada. Volte com ◀ para jogar Kanto.',{disabled:true}))
+    : G.confirmNew
     ? menu(btn('new','SIM, COMEÇAR DO ZERO','A carreira salva será apagada',{primary:true}), btn('newNo','NÃO, VOLTAR'))
-    : sv ? menu(btn('continue','▶ CONTINUAR CARREIRA', saveSummary(sv), {primary:true}), btn('new','NOVO JOGO','Apaga a carreira salva'), btn('dex',`📕 POKéDEX ${dk.c}/151`,'Tudo que você já registrou em todas as carreiras'), btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'))
-    : menu(btn('new','NOVO JOGO','Comece em Pallet Town com seu primeiro parceiro',{primary:true}), btn('dex',`📕 POKéDEX ${dk.c}/151`,'Tudo que você já registrou em todas as carreiras'), btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'));
+    : sv ? menu(btn('continue','▶ CONTINUAR CARREIRA', saveSummary(sv), {primary:true}), btn('new','NOVO JOGO','Apaga a carreira salva'), dexBtn, btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'))
+    : menu(btn('new','NOVO JOGO',`Comece em ${LR.RT.home} com seu primeiro parceiro`,{primary:true}), dexBtn, btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'));
+  const dots=REGION_ORDER.map(id=>`<i class="${id===LOBBY?'on':''}"></i>`).join("");
   scene(`<div class="title-sky"><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
-      <div class="logo"><div class="logo-main">POKéMON</div><div class="logo-sub">CARREIRA DE TREINADOR</div><div class="logo-ed">EDIÇÃO KANTO · GEN 1</div></div>
+      <div class="logo"><div class="logo-main">POKéMON</div><div class="logo-sub">CARREIRA DE TREINADOR</div><div class="logo-ed">${LR.RT.edition}</div></div>
+      <div class="region-sw"><button class="rg-arrow" data-act="regPrev" aria-label="Região anterior">◀</button>
+        <div class="rg-name"><b>${LR.RT.name.toUpperCase()}</b><span class="rg-dots">${dots}</span></div>
+        <button class="rg-arrow" data-act="regNext" aria-label="Próxima região">▶</button></div>
       <div class="pokeball title-ball"><i></i></div><div class="starters">${st}</div><div class="grass"></div></div>
     <div class="title-menu"><div class="press">— PRESSIONE START —</div>
       ${main}
       <div class="rec-card"><div class="rec-h">🏆 SEUS RECORDES</div>${rec}</div>
-      <div class="foot">${Object.keys(DEX).length} POKéMON · 8 GINÁSIOS · ELITE FOUR<br>FAN GAME · SPRITES FIRERED/LEAFGREEN · TECLAS 1-6 ESCOLHEM</div></div>`, 'title');
+      <div class="foot">${tot} POKéMON · 8 GINÁSIOS · ELITE FOUR<br>FAN GAME · SPRITES FIRERED/LEAFGREEN · TECLAS 1-6 ESCOLHEM · ← → TROCAM A REGIÃO</div></div>`, 'title');
 }
 
 function how(){
@@ -267,19 +279,20 @@ function how(){
 function pickScreen(){
   const cards=STARTERS.map(s=>{
     const d=DEX[s], mu=typeMult(d.t, GYMS[0].t);
-    const v = mu>1 ? ['adv','BOM CONTRA BROCK'] : mu<1 ? ['dis','MODO DIFÍCIL: BROCK'] : ['neu','NEUTRO VS BROCK'];
+    const L=GYMS[0].leader.toUpperCase();
+    const v = mu>1 ? ['adv',`BOM CONTRA ${L}`] : mu<1 ? ['dis',`MODO DIFÍCIL: ${L}`] : ['neu',`NEUTRO VS ${L}`];
     const ch=chain(s).map((c,i)=>(i?'<span>›</span>':'')+`<img src="${SPRITES[c]}" alt="${c}">`).join("");
     return `<button class="scard" data-act="choose" data-arg="${s}"><img class="big" src="${SPRITES[s]}" alt="${s}"><div class="nm">${s.toUpperCase()}</div>${typeTag(d.t)}<div class="chain">${ch}</div><div class="vsb ${v[0]}">${v[1]}</div></button>`;
   }).join("");
-  scene(`<div class="lab"><div class="prof">👴</div><div class="lab-ball-row"><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div></div></div>
-    <span class="speaker">PROF. CARVALHO</span><div class="dialog" id="tw"></div><div class="starters-pick">${cards}</div>`, '',
+  scene(`<div class="lab"><div class="prof">${RT.profIc}</div><div class="lab-ball-row"><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div></div></div>
+    <span class="speaker">${RT.prof.toUpperCase()}</span><div class="dialog" id="tw"></div><div class="starters-pick">${cards}</div>`, '',
     'Olá! Bem-vindo ao mundo POKéMON!\nO caminho até a Liga é duro: 8 ginásios, a Elite Four e nenhuma segunda chance. Escolha seu primeiro parceiro com sabedoria!');
 }
 function chooseStarter(s){
   if(!DEX[s]) return;
   const m=mon(s,5); m.shiny=Math.random()<SHINY_RATE; if(m.shiny) G.stats.shinies++;
   G.team.push(m); G.starter=s;
-  logAdd('catch','🎒',`Recebeu ${s}${m.shiny?' ✨ SHINY':''} do Prof. Carvalho`);
+  logAdd('catch','🎒',`Recebeu ${s}${m.shiny?' ✨ SHINY':''} do ${RT.prof}`);
   G.phase='hub'; render();
 }
 
@@ -575,7 +588,10 @@ const SCREENS={title, how, pick:pickScreen, hub, roulette:rouletteScreen, event:
 function render(){ (SCREENS[G.phase]||title)(); try{ window.scrollTo(0,0); }catch(e){} afterRender(); }
 function act(id, arg){
   switch(id){
+    case 'regPrev': lobbyGo(-1); G.confirmNew=false; break;
+    case 'regNext': lobbyGo(1); G.confirmNew=false; break;
     case 'new':
+      if(!REGIONS[LOBBY].ready) return;
       if(loadSave() && !G.confirmNew){ G.confirmNew=true; G.phase='title'; break; }
       clearSave(); G=newGame(); G.phase='pick'; break;
     case 'newNo': G.confirmNew=false; break;
@@ -630,6 +646,7 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('keydown', e=>{
   if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(G && G.phase==='title' && (e.key==='ArrowLeft'||e.key==='ArrowRight')){ e.preventDefault(); act(e.key==='ArrowLeft'?'regPrev':'regNext'); return; }
   if(e.key>='1' && e.key<='6'){
     const list=[...$scene.querySelectorAll('.menu .btn:not(:disabled), .starters-pick .scard')];
     const b=list[Number(e.key)-1]; if(b){ e.preventDefault(); b.click(); }

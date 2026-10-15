@@ -75,9 +75,9 @@ function dexScreen(){
       + `<img src="${src}" alt="${seen?s:'Pokémon desconhecido'}" loading="lazy"><span class="dx-nm">${seen?s:'???'}</span>`
       + `${got?'<i class="dx-ball" title="Registrado"></i>':''}${sh?'<i class="dx-sh" title="Shiny">✨</i>':''}</div>`;
   }).join("");
-  scene(`<div class="ribbon plate"><span class="pb-mini"></span>POKéDEX DE KANTO</div>
-    <div class="dx-count"><span>REGISTRADOS <b>${k.c}</b>/151</span><span>VISTOS <b>${k.v}</b></span><span>SHINIES <b>${k.s}</b></span></div>
-    <div class="dx-bar"><i style="width:${k.c/151*100}%"></i></div>
+  scene(`<div class="ribbon plate"><span class="pb-mini"></span>POKéDEX DE ${RT.name.toUpperCase()}</div>
+    <div class="dx-count"><span>REGISTRADOS <b>${k.c}</b>/${DEX_LIST.length}</span><span>VISTOS <b>${k.v}</b></span><span>SHINIES <b>${k.s}</b></span></div>
+    <div class="dx-bar"><i style="width:${k.c/DEX_LIST.length*100}%"></i></div>
     <div class="dx-help">Registrado = esteve no seu time em qualquer carreira. Visto = apareceu na roleta ou você recusou. A Pokédex nunca zera.</div>
     <div class="dx-grid">${cells}</div>${menu(btn('dexBack','VOLTAR'))}`, 'dexs');
 }
@@ -152,6 +152,3 @@ function afterRender(){
   setMuteBtn();
 }
 document.addEventListener("pointerdown", ()=>SFX.unlock(), {passive:true});
-
-/* ---------- boot ---------- */
-G=newGame(); render();

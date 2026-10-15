@@ -343,3 +343,23 @@ body{padding-top:max(18px,env(safe-area-inset-top));padding-bottom:max(40px,env(
   .dex-title{font-size:8px}
   .dx-grid{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}.dx img{width:48px;height:48px}
 }
+
+/* ---------- lobby: seleção de região ---------- */
+#app,#dex,.dex-title,#mute{transition:background-color .5s,box-shadow .5s,border-color .5s}
+body[data-region=johto] #app{background:#2F6FD6;box-shadow:0 0 0 4px #0F2E78,0 16px 40px rgba(0,0,0,.6)}
+body[data-region=johto] #dex{border-bottom-color:#0F2E78}
+body[data-region=johto] .dex-title{text-shadow:2px 2px 0 #0F2E78}
+body[data-region=johto] #mute{box-shadow:0 3px 0 #0F2E78}
+body[data-region=johto] .title-sky{background:linear-gradient(#2a3d8f,#5b79c9 55%,#8fb0e8)}
+body[data-region=johto] .logo-ed{color:#ffe9a8}
+.region-sw{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;gap:14px;margin:10px auto 0}
+.rg-arrow{width:40px;height:40px;border-radius:10px;border:3px solid var(--k);background:#fff;font-size:16px;cursor:pointer;box-shadow:0 3px 0 var(--k);color:var(--red);-webkit-tap-highlight-color:transparent;touch-action:manipulation;animation:nudge 1.6s ease-in-out infinite}
+.rg-arrow:first-child{animation-name:nudgeL}
+.rg-arrow:active{transform:translateY(2px);box-shadow:0 1px 0 var(--k)}
+.rg-arrow:focus-visible{outline:3px dashed #fff;outline-offset:2px}
+@keyframes nudge{50%{transform:translateX(3px)}}@keyframes nudgeL{50%{transform:translateX(-3px)}}
+.rg-name{min-width:120px;text-align:center;font-family:'PS2P';font-size:12px;color:#fff;text-shadow:2px 2px 0 #1B2A5C;background:rgba(27,42,92,.55);padding:8px 12px 6px;border-radius:10px;border:2px solid rgba(255,255,255,.6)}
+.rg-name b{color:#fff;display:block}
+.rg-dots{display:flex;justify-content:center;gap:6px;margin-top:6px}.rg-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.4)}.rg-dots i.on{background:var(--yellow)}
+body[data-region=johto] .rg-arrow{color:#2F6FD6}
+@media (prefers-reduced-motion:reduce){.rg-arrow{animation:none}}

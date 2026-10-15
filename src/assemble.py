@@ -159,7 +159,18 @@ css = rd(os.path.join(BASE, "style_v2.css")).replace("__FONT_PS2P__", fonts["Pre
 ui = rd(os.path.join(BASE, "ui_v2.js"))
 
 polish = rd(os.path.join(BASE, "polish.js"))
+region = rd(os.path.join(BASE, "region.js"))
 sprite_js += "const DEX_LIST = %s;\n" % json.dumps([[DEX_NUM[n], n] for n in dex_names], ensure_ascii=False, separators=(",", ":"))
+# prévia do lobby para regiões cujo pacote ainda não foi carregado (só os iniciais)
+sprite_js += "const LOBBY_PREVIEW = %s;\n" % json.dumps({"johto": [uri(os.path.join(SPR, "%04d.png" % n)) for n in (152, 155, 158)]}, separators=(",", ":"))
+
+# dados que mudam por região viram `let` (região ativa = useRegion troca os valores)
+REGION_VARS = ["BADGES", "DEX_LIST", "DEX", "BRANCH", "STONE", "STARTERS", "WILD_POOL", "TYPE_CHART", "GYMS", "ELITE",
+               "GYM_EVENTS", "CITY", "BADGE_NAMES", "LEADER_LINES", "WHEEL_ICON", "REC_KEY", "SAVE_KEY", "DEX_KEY"]
+def letify(src, names):
+    for nm in names:
+        src, n = re.subn(r"\bconst %s(\s*=)" % nm, r"let %s\1" % nm, src, count=1)
+    return src
 
 SITE = "https://pokemon-carreira-kanto.vercel.app/"
 DESC = ("Uma carreira de treinador Pokémon em Kanto: 8 ginásios, Elite Four, roleta de eventos, "
@@ -189,6 +200,8 @@ html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
         '<button id="mute" data-act="mute" aria-label="Desligar som">🔊</button>'
         '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main><div id="dexfoot"><b class="b"></b><b class="r"></b><b class="y"></b><b class="g"></b></div></div>\n'
-        '<script>\n"use strict";\n' + sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n" + polish + "\n</script>\n</body>\n</html>\n")
+        '<script>\n"use strict";\n' + letify(sprite_js + A + "\n" + B1 + "\n" + B2 + "\n" + EXTRA + "\n" + ui + "\n" + polish, REGION_VARS) + "\n" + region + "\n</script>\n</body>\n</html>\n")
+for nm in REGION_VARS:
+    assert re.search(r"\blet %s\s*=" % nm, html), "região: %s não virou let" % nm
 io.open(OUT, "w", encoding="utf-8").write(html)
 print("wrote", OUT, len(html), "chars")

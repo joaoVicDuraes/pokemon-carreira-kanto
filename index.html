@@ -175,6 +175,9 @@ b{font-weight:normal;color:var(--blue)}
 .rel:hover,.rel:focus-visible{background:#ffe3dc;outline:none}
 .rel.yes{background:var(--red);color:#fff}
 .rel-ask{font-size:17px;color:var(--red-d);margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.swap-box{margin-top:12px;background:#FFF1EC;border:3px dashed var(--red);border-radius:12px;padding:10px}
+.swap-new{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:10px;background:#fff;border:3px solid var(--ok);border-radius:10px;padding:6px 10px;margin-top:10px;box-shadow:0 0 0 3px #d8f5da}
+.swap-new .sp img{width:72px;height:72px;image-rendering:pixelated}
 .m-pow b{display:block;font-size:12px;color:var(--blue);margin-top:3px}
 
 /* ---------- roleta ---------- */
@@ -485,7 +488,7 @@ function teamPower(){return G.team.map(monPower).sort((a,b)=>b-a).slice(0,3).red
    A proporção verde/vermelho por fase é controlada em greenRatio(). */
 
 /* helpers de efeito ------------------------------------------------ */
-function addMon(species,lv,raw){const m=mon(species,lv);m.shiny=Math.random()<SHINY_RATE;if(!raw&&G.team.length){const s=G.team.slice().sort((a,b)=>b.lv-a.lv)[0];const fl=Math.round(s.lv*0.85);if(m.lv<fl)m.lv=fl;}G.team.push(m);G.stats.caught++;return m;}
+function addMon(species,lv,raw){const m=mon(species,lv);m.shiny=Math.random()<SHINY_RATE;if(!raw&&G.team.length){const s=G.team.slice().sort((a,b)=>b.lv-a.lv)[0];const fl=Math.round(s.lv*0.85);if(m.lv<fl)m.lv=fl;}if(G.team.length>=6){G.pendingSwap=m;return m;}G.team.push(m);G.stats.caught++;return m;}
 function lvlAll(n){G.team.forEach(m=>{m.lv+=n;tryEvolveSilent(m);});}
 function lvlOne(m,n){m.lv+=n;tryEvolveSilent(m);return m;}
 function dropLvOne(m,n){m.lv=Math.max(5,m.lv-n);return m;}
@@ -513,8 +516,8 @@ const GYM_EVENTS=[
   /* 0 — Brock (Pedra) ------------------------------------------- */
   {
     green:[
-      {ic:"🐭",lb:"Pikachu raro",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Pikachu",10);return{title:"Surpresa na Floresta de Viridian",text:`Entre as árvores, um <b>Pikachu</b> raro (Lv ${m.lv})! Captura imediata — ótimo contra os próximos desafios.`,highlight:m};}},
-      {ic:"💪",lb:"Reforço R22",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.5?"Mankey":"Nidoran♂";const m=addMon(s,10);return{title:"Reforço na Rota 22",text:`Um <b>${s}</b> selvagem (Lv ${m.lv}) desafia seu inicial e decide entrar pro time — vantagem direta contra o Brock!`,highlight:m};}},
+      {ic:"🐭",lb:"Pikachu raro",fn:()=>{const m=addMon("Pikachu",10);return{title:"Surpresa na Floresta de Viridian",text:`Entre as árvores, um <b>Pikachu</b> raro (Lv ${m.lv})! Captura imediata — ótimo contra os próximos desafios.`,highlight:m};}},
+      {ic:"💪",lb:"Reforço R22",fn:()=>{const s=Math.random()<0.5?"Mankey":"Nidoran♂";const m=addMon(s,10);return{title:"Reforço na Rota 22",text:`Um <b>${s}</b> selvagem (Lv ${m.lv}) desafia seu inicial e decide entrar pro time — vantagem direta contra o Brock!`,highlight:m};}},
       {ic:"🦋",lb:"Casulo acelerado",fn:()=>{const bug=G.team.find(m=>DEX[m.species].t==="bug");if(bug){bug.lv=Math.max(bug.lv,10);tryEvolveSilent(bug);return{title:"Casulo Acelerado",text:`O treino intenso na floresta faz seu <b>${bug.species}</b> evoluir precocemente!`,highlight:bug};}lvlAll(6);return{title:"Treino na floresta",text:`Sem inseto no time — mas o treino rende: <b>time +6 níveis</b>.`,highlight:null};}},
       {ic:"🧢",lb:"Caçador de Insetos",fn:()=>{const m=lvlOne(G.team[0],6);return{title:"Dica do Jovem Caçador de Insetos",text:`Você vence um Bug Catcher local e ganha experiência extra: <b>${m.species} +6 níveis</b>.`,highlight:m};}},
     ],
@@ -529,8 +532,8 @@ const GYM_EVENTS=[
     green:[
       {ic:"🌙",lb:"Moon Stone",fn:()=>{const c=G.team.find(m=>DEX[m.species].evo&&DEX[m.species].evoLv>=99);if(c){const old=c.species;doEvolve(c);G.stats.evolved++;return{title:"Descoberta no Mt. Moon",text:`Uma <b>Moon Stone</b> brilha na cratera! <b>${old}</b> evoluiu para ${c.species}!`,highlight:c};}lvlAll(6);return{title:"Descoberta no Mt. Moon",text:`Uma Moon Stone brilha, mas ninguém compatível — a energia reforça o time: <b>+6 níveis gerais</b>.`,highlight:null};}},
       {ic:"🌉",lb:"Ponte Pepita",fn:()=>{lvlAll(5);return{title:"Desafio da Ponte Pepita",text:`Você vence os 5 treinadores seguidos da Nugget Bridge! <b>Time inteiro +5 níveis</b>.`,highlight:null};}},
-      {ic:"🦊",lb:"Resgate em Cerulean",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Eevee",14);return{title:"Resgate em Cerulean",text:`Você ajuda o Bill no farol e ganha um <b>Eevee</b> precoce (Lv ${m.lv})!`,highlight:m};}},
-      {ic:"🐟",lb:"Magikarp honesto",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Magikarp",19);return{title:"Vendedor de Magikarp Honesto",text:`Um homem honesto te entrega um <b>Magikarp</b> prestes a virar Gyarados (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🦊",lb:"Resgate em Cerulean",fn:()=>{const m=addMon("Eevee",14);return{title:"Resgate em Cerulean",text:`Você ajuda o Bill no farol e ganha um <b>Eevee</b> precoce (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🐟",lb:"Magikarp honesto",fn:()=>{const m=addMon("Magikarp",19);return{title:"Vendedor de Magikarp Honesto",text:`Um homem honesto te entrega um <b>Magikarp</b> prestes a virar Gyarados (Lv ${m.lv})!`,highlight:m};}},
     ],
     red:[
       {ic:"🚀",lb:"Emboscada Rocket",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Emboscada Rocket no Mt. Moon",text:`Capangas te cercam no túnel escuro. Na fuga você deixa cair uma Poké Bola: <b>perdeu ${st.species}</b>.`,highlight:null};}},
@@ -541,9 +544,9 @@ const GYM_EVENTS=[
   /* 2 — Lt. Surge (Elétrico) ----------------------------------- */
   {
     green:[
-      {ic:"🕳️",lb:"Caverna Diglett",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.4?"Dugtrio":"Diglett";const m=addMon(s,Math.random()<0.4?26:12);return{title:"Recompensa da Caverna Diglett",text:`Um <b>${s}</b> surge do chão (Lv ${m.lv}) — imunidade total aos choques do Surge!`,highlight:m};}},
+      {ic:"🕳️",lb:"Caverna Diglett",fn:()=>{const s=Math.random()<0.4?"Dugtrio":"Diglett";const m=addMon(s,Math.random()<0.4?26:12);return{title:"Recompensa da Caverna Diglett",text:`Um <b>${s}</b> surge do chão (Lv ${m.lv}) — imunidade total aos choques do Surge!`,highlight:m};}},
       {ic:"🚢",lb:"Banquete S.S. Anne",fn:()=>{lvlAll(5);return{title:"Banquete no S.S. Anne",text:`Tratamento VIP a bordo! <b>Time inteiro +5 níveis</b> (e quem estava perto, evoluiu).`,highlight:null};}},
-      {ic:"🎁",lb:"Presente do Capitão",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.5?"Abra":"Machop";const m=addMon(s,16);return{title:"Presente do Capitão",text:`Além de ensinar Cut, o capitão te entrega um <b>${s}</b> já treinado (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🎁",lb:"Presente do Capitão",fn:()=>{const s=Math.random()<0.5?"Abra":"Machop";const m=addMon(s,16);return{title:"Presente do Capitão",text:`Além de ensinar Cut, o capitão te entrega um <b>${s}</b> já treinado (Lv ${m.lv})!`,highlight:m};}},
     ],
     red:[
       {ic:"🤢",lb:"Enjoo marítimo",fn:()=>{const s=strongest();dropLvOne(s,1);return{title:"Enjoo Marítimo no S.S. Anne",text:`O navio balança demais e <b>${s.species}</b> passa mal, chegando fraco ao Lt. Surge: <b>-1 nível</b>.`,highlight:s};}},
@@ -555,8 +558,8 @@ const GYM_EVENTS=[
   {
     green:[
       {ic:"💎",lb:"Pedra Elemental",fn:()=>{const c=G.team.find(m=>DEX[m.species].evo&&DEX[m.species].evoLv>=99);if(c){const old=c.species;doEvolve(c);G.stats.evolved++;return{title:"Compras no Departamento de Celadon",text:`Um treinador generoso te dá uma Pedra Elemental! <b>${old}</b> evoluiu para ${c.species}!`,highlight:c};}lvlAll(6);return{title:"Compras no Departamento",text:`Você ganha uma pedra, mas ninguém compatível — treino reforça o time: <b>+6 níveis</b>.`,highlight:null};}},
-      {ic:"🎰",lb:"Jackpot Game Corner",fn:()=>{if(!freeSlot())return bonusFull();const s=["Dratini","Scyther","Porygon"][Math.floor(Math.random()*3)];const m=addMon(s,18);return{title:"Jackpot no Game Corner",text:`Sorte nas máquinas! Você resgata um <b>${s}</b> (Lv ${m.lv}) de prêmio.`,highlight:m};}},
-      {ic:"🔥",lb:"Fogo contra Erika",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.5?"Growlithe":"Vulpix";const m=addMon(s,16);return{title:"Chá da Mansão Celadon",text:`Você encontra um <b>${s}</b> (Lv ${m.lv}) — vantagem perfeita de Fogo contra a Erika!`,highlight:m};}},
+      {ic:"🎰",lb:"Jackpot Game Corner",fn:()=>{const s=["Dratini","Scyther","Porygon"][Math.floor(Math.random()*3)];const m=addMon(s,18);return{title:"Jackpot no Game Corner",text:`Sorte nas máquinas! Você resgata um <b>${s}</b> (Lv ${m.lv}) de prêmio.`,highlight:m};}},
+      {ic:"🔥",lb:"Fogo contra Erika",fn:()=>{const s=Math.random()<0.5?"Growlithe":"Vulpix";const m=addMon(s,16);return{title:"Chá da Mansão Celadon",text:`Você encontra um <b>${s}</b> (Lv ${m.lv}) — vantagem perfeita de Fogo contra a Erika!`,highlight:m};}},
     ],
     red:[
       {ic:"🎰",lb:"Vício no cassino",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Vício no Cassino",text:`Você perde a noção do tempo nos caça-níqueis. A Rocket <b>confisca ${st.species}</b> como pagamento de dívida.`,highlight:null};}},
@@ -567,9 +570,9 @@ const GYM_EVENTS=[
   /* 4 — Koga (Veneno) ------------------------------------------ */
   {
     green:[
-      {ic:"😴",lb:"Snorlax",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Snorlax",30);return{title:"Despertar da Poké Flauta",text:`Você toca a flauta e captura o gigante <b>Snorlax</b> (Lv ${m.lv}) — um tanque pro resto da carreira!`,highlight:m};}},
-      {ic:"🦘",lb:"Safari Zone",fn:()=>{if(!freeSlot())return bonusFull();const s=["Tauros","Kangaskhan","Chansey","Rhyhorn"][Math.floor(Math.random()*4)];const m=addMon(s,28);return{title:"Sorte Grande na Safari Zone",text:`A Safari Ball funciona de primeira! Você captura um <b>${s}</b> (Lv ${m.lv}).`,highlight:m};}},
-      {ic:"🥋",lb:"Dojo de Saffron",fn:()=>{if(!freeSlot())return bonusFull();const s=["Hitmonlee","Hitmonchan","Hypno"][Math.floor(Math.random()*3)];const m=addMon(s,30);return{title:"Rei do Dojo de Saffron",text:`Você vence o Mestre do Karatê e ganha um <b>${s}</b> (Lv ${m.lv}) pra destruir o Koga!`,highlight:m};}},
+      {ic:"😴",lb:"Snorlax",fn:()=>{const m=addMon("Snorlax",30);return{title:"Despertar da Poké Flauta",text:`Você toca a flauta e captura o gigante <b>Snorlax</b> (Lv ${m.lv}) — um tanque pro resto da carreira!`,highlight:m};}},
+      {ic:"🦘",lb:"Safari Zone",fn:()=>{const s=["Tauros","Kangaskhan","Chansey","Rhyhorn"][Math.floor(Math.random()*4)];const m=addMon(s,28);return{title:"Sorte Grande na Safari Zone",text:`A Safari Ball funciona de primeira! Você captura um <b>${s}</b> (Lv ${m.lv}).`,highlight:m};}},
+      {ic:"🥋",lb:"Dojo de Saffron",fn:()=>{const s=["Hitmonlee","Hitmonchan","Hypno"][Math.floor(Math.random()*3)];const m=addMon(s,30);return{title:"Rei do Dojo de Saffron",text:`Você vence o Mestre do Karatê e ganha um <b>${s}</b> (Lv ${m.lv}) pra destruir o Koga!`,highlight:m};}},
     ],
     red:[
       {ic:"🌾",lb:"Frustração Safari",fn:()=>{dropLvAll(1);return{title:"Frustração na Safari Zone",text:`O Pokémon incrível foge e você se perde na selva. O time gasta todas as energias te procurando: <b>-1 nível gerais</b>.`,highlight:null};}},
@@ -580,7 +583,7 @@ const GYM_EVENTS=[
   /* 5 — Sabrina (Psíquico) ------------------------------------- */
   {
     green:[
-      {ic:"🦕",lb:"Herói da Silph",fn:()=>{if(!freeSlot())return bonusFull();const m=addMon("Lapras",30);return{title:"Herói da Silph Co.",text:`Você derrota os executivos da Rocket e um cientista te entrega um <b>Lapras</b> de alto nível (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🦕",lb:"Herói da Silph",fn:()=>{const m=addMon("Lapras",30);return{title:"Herói da Silph Co.",text:`Você derrota os executivos da Rocket e um cientista te entrega um <b>Lapras</b> de alto nível (Lv ${m.lv})!`,highlight:m};}},
       {ic:"🔬",lb:"Protótipo do Presidente",fn:()=>{lvlAll(6);return{title:"Protótipo do Presidente",text:`O presidente da Silph equipa seu time com itens de ponta: <b>+6 níveis pra toda a equipe</b> antes da Sabrina.`,highlight:null};}},
       {ic:"😈",lb:"Sombra de Lavender",fn:()=>{const dark=G.team.find(m=>["ghost","normal","electric"].includes(DEX[m.species].t))||strongest();lvlOne(dark,10);return{title:"Sombra de Lavender",text:`Seu <b>${dark.species}</b> aprende um golpe decisivo contra Psíquicos: <b>+10 níveis</b>, dobrando suas chances.`,highlight:dark};}},
     ],
@@ -593,8 +596,8 @@ const GYM_EVENTS=[
   /* 6 — Blaine (Fogo) ------------------------------------------ */
   {
     green:[
-      {ic:"🦴",lb:"Ressurreição",fn:()=>{if(!freeSlot())return bonusFull();const s=["Omastar","Kabutops","Aerodactyl"][Math.floor(Math.random()*3)];const m=addMon(s,34);return{title:"Ressurreição no Laboratório",text:`Os cientistas restauram seu fóssil! Você ganha um <b>${s}</b> (Lv ${m.lv}) já evoluído pra apagar o fogo do Blaine.`,highlight:m};}},
-      {ic:"🧊",lb:"Lenda Seafoam",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.45?"Articuno":(Math.random()<0.5?"Gyarados":"Starmie");const m=addMon(s,36);return{title:"Lenda das Ilhas Seafoam",text:`Explorando a caverna congelada, você captura <b>${s}</b> (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🦴",lb:"Ressurreição",fn:()=>{const s=["Omastar","Kabutops","Aerodactyl"][Math.floor(Math.random()*3)];const m=addMon(s,34);return{title:"Ressurreição no Laboratório",text:`Os cientistas restauram seu fóssil! Você ganha um <b>${s}</b> (Lv ${m.lv}) já evoluído pra apagar o fogo do Blaine.`,highlight:m};}},
+      {ic:"🧊",lb:"Lenda Seafoam",fn:()=>{const s=Math.random()<0.45?"Articuno":(Math.random()<0.5?"Gyarados":"Starmie");const m=addMon(s,36);return{title:"Lenda das Ilhas Seafoam",text:`Explorando a caverna congelada, você captura <b>${s}</b> (Lv ${m.lv})!`,highlight:m};}},
       {ic:"📖",lb:"Diários da Mansão",fn:()=>{lvlAll(7);return{title:"Diários Secretos da Mansão",text:`Você acha Rare Candies e TMs nos escombros: <b>+7 níveis divididos no time</b>.`,highlight:null};}},
     ],
     red:[
@@ -606,9 +609,9 @@ const GYM_EVENTS=[
   /* 7 — Giovanni (Terra) --------------------------------------- */
   {
     green:[
-      {ic:"🌩️",lb:"Usina Elétrica",fn:()=>{if(!freeSlot())return bonusFull();const s=Math.random()<0.45?"Zapdos":(Math.random()<0.5?"Electabuzz":"Magneton");const m=addMon(s,38);return{title:"Sobrecarga na Usina Elétrica",text:`Na Power Plant abandonada você captura <b>${s}</b> (Lv ${m.lv})!`,highlight:m};}},
+      {ic:"🌩️",lb:"Usina Elétrica",fn:()=>{const s=Math.random()<0.45?"Zapdos":(Math.random()<0.5?"Electabuzz":"Magneton");const m=addMon(s,38);return{title:"Sobrecarga na Usina Elétrica",text:`Na Power Plant abandonada você captura <b>${s}</b> (Lv ${m.lv})!`,highlight:m};}},
       {ic:"⚔️",lb:"Duelo com o Rival",fn:()=>{lvlAll(7);return{title:"Treino na Rota 22 com o Rival",text:`Você vence um duelo épico contra o Rival! <b>Time +7 níveis</b> e toda evolução pendente acontece.`,highlight:null};}},
-      {ic:"🐲",lb:"Deserção Rocket",fn:()=>{if(!freeSlot())return bonusFull();const s=["Dragonite","Alakazam","Gyarados"][Math.floor(Math.random()*3)];const m=addMon(s,40);return{title:"Deserção Rocket",text:`Um membro arrependido da Rocket te devolve um <b>${s}</b> (Lv ${m.lv}) pronto pra guerra.`,highlight:m};}},
+      {ic:"🐲",lb:"Deserção Rocket",fn:()=>{const s=["Dragonite","Alakazam","Gyarados"][Math.floor(Math.random()*3)];const m=addMon(s,40);return{title:"Deserção Rocket",text:`Um membro arrependido da Rocket te devolve um <b>${s}</b> (Lv ${m.lv}) pronto pra guerra.`,highlight:m};}},
     ],
     red:[
       {ic:"🚀",lb:"Ultimato Rocket",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Ultimato da Equipe Rocket",text:`A elite da Rocket faz uma emboscada pesada na Rota 22 e <b>rouba ${st.species}</b>, um titular seu.`,highlight:null};}},
@@ -683,7 +686,6 @@ GYM_EVENTS.forEach(set=>{
 
 /* Encontro lendário (reta final): única forma de ter Moltres, Mewtwo e Mew */
 function legendEvent(){
-  if(!freeSlot()) return bonusFull();
   const r=Math.random(), s = r<0.55 ? "Moltres" : r<0.85 ? "Mewtwo" : "Mew";
   const m=addMon(s, s==="Mewtwo"?44:40);
   const where = {Moltres:"No topo da Victory Road, chamas iluminam a caverna",Mewtwo:"No fundo da Caverna Cerulean, um olhar frio te encara",Mew:"Uma pequena silhueta rosa brinca entre as árvores e decide te seguir"}[s];
@@ -693,7 +695,6 @@ GYM_EVENTS[GYM_EVENTS.length-1].green.push({ic:"🌟",lb:"Lendário",fn:legendEv
 
 /* Fóssil do Mt. Moon (roleta rumo a Cerulean): Omanyte ou Kabuto */
 function fossilEvent(){
-  if(!freeSlot()) return bonusFull();
   const helix=Math.random()<0.5, s=helix?"Omanyte":"Kabuto";
   const m=addMon(s,14);
   return {title:"Fóssil do Mt. Moon", text:`No fundo do Mt. Moon você escolhe o <b>${helix?"Fóssil Hélix":"Fóssil Domo"}</b>. Um cientista do Museu de Pewter o revive na hora: <span class="reward">${s} (Lv ${m.lv}) entrou para o time!</span>`, highlight:m};
@@ -707,6 +708,17 @@ function releaseMon(i){
   G.stats.released=(G.stats.released||0)+1;
   return m;
 }
+
+/* Troca com time cheio: o recém-chegado entra no lugar de quem você escolher */
+function swapIn(i){
+  const nw=G.pendingSwap;
+  if(!nw || i<=0 || i>=G.team.length) return null;
+  const out=G.team[i];
+  G.team[i]=nw; G.pendingSwap=null;
+  G.stats.caught++; G.stats.released=(G.stats.released||0)+1;
+  return {in:nw, out};
+}
+function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5); return nw; }
 
 /* =====================================================================
    INTERFACE v2 — visual estilo GBA (FireRed/LeafGreen)
@@ -958,7 +970,7 @@ function decisionMenu(){
   return menu(
     btn('roll','🎲 GIRAR A ROLETA',`${Math.round(greenRatio()*100)}% de sorte nesta fase · rende mais na média, mas arrisca`,{primary:true}),
     btn('train','🏋️ TREINAR FIRME','+2 níveis no time inteiro · seguro'),
-    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio (6/6): solte um Pokémon na lista abaixo':'Captura garantida de um Pokémon selvagem',{disabled:G.team.length>=6}));
+    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio: se achar alguém, você escolhe quem sai':'Captura garantida de um Pokémon selvagem'));
 }
 function hub(){
   if(G.gymIndex>=GYMS.length){ if(!G.vrDone) return hubVR(); G.phase='elite'; return render(); }
@@ -1024,7 +1036,7 @@ function applyPicked(picked){
   const diff=diffOf(before);
   logAdd(picked.good?'good':'bad', picked.ev.ic, res.title);
   postProcess(diff);
-  G.lastResult={kind:'event', good:picked.good, ic:picked.ev.ic, title:res.title, text:res.text, highlight:res.highlight, diff};
+  G.lastResult={kind:'event', good:picked.good, ic:picked.ev.ic, title:res.title, text:res.text, highlight:res.highlight, diff, before};
   G.phase='event'; render();
 }
 function doTrain(){
@@ -1037,27 +1049,46 @@ function doTrain(){
   G.phase='event'; render();
 }
 function doSearch(){
-  if(G.team.length>=6) return;
   const before=snap(), w=pickWild(), m=addMon(w.species, w.lv);
   G.step++; G.day++;
   const diff=diffOf(before); postProcess(diff);
   G.lastResult={kind:'search', good:true, ic:'🔎', title:'Captura garantida!',
-    text:`Você vasculha a grama alta com calma... um <b>${m.species}</b> selvagem (Lv ${m.lv}) aparece!\nA Poké Bola balança... uma... duas... três... <span class="reward">Capturado!</span>`, highlight:m, diff};
+    text:`Você vasculha a grama alta com calma... um <b>${m.species}</b> selvagem (Lv ${m.lv}) aparece!\nA Poké Bola balança... uma... duas... três... <span class="reward">Capturado!</span>`, highlight:m, diff, before};
   G.phase='event'; render();
 }
+function swapPanel(nw){
+  const np=monPower(nw);
+  const rows=G.team.map((m,i)=>{
+    const p=monPower(m), dlt=np-p;
+    const cmp = dlt>0 ? `<i class="d d-up">${nw.species} +${dlt}</i>` : dlt<0 ? `<i class="d d-dn">${nw.species} ${dlt}</i>` : `<i class="d">igual</i>`;
+    return `<div class="mon ${i===0?'lead':''}"><div class="sp">${front(m)}</div>
+      <div><div class="m-name">${i===0?'<span class="star">★</span> ':''}${m.species}${m.shiny?' <span class="shiny">✨</span>':''}</div>
+      <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${i>0?cmp:''}</div>
+      ${i>0?`<button class="rel yes" data-act="swapIn" data-arg="${i}">TROCAR POR ${nw.species.toUpperCase()}</button>`:'<span class="evo-lbl">seu inicial não sai do time</span>'}</div>
+      <div class="m-pow">PODER<b>${p}</b></div></div>`;
+  }).join("");
+  return `<div class="swap-box"><div class="ribbon bad">TIME CHEIO!</div>
+    <div class="swap-new"><div class="sp">${front(nw)}</div><div><div class="m-name">${nw.species}${nw.shiny?' <span class="shiny">✨</span>':''} quer entrar</div>
+      <div class="m-sub">${typeTag(nw.t)}<span class="m-lv">Lv${nw.lv}</span><span class="m-lv">PODER ${np}</span></div></div></div>
+    <div class="party-h">QUEM SAI PRA ELE ENTRAR?<small>Quem sair é solto na natureza. Escolher não gasta decisão.</small></div>
+    <div class="party">${rows}</div>
+    ${menu(btn('swapSkip',`DEIXAR ${nw.species.toUpperCase()} IR`,'Time fica igual, mas ganha +5 níveis pela experiência'))}</div>`;
+}
 function eventScreen(){
-  const r=G.lastResult, over=G.pendingRocketGameOver, can=G.step>=STEPS_PER_GYM;
-  const h = r.highlight && G.team.includes(r.highlight) ? r.highlight : null;
+  const r=G.lastResult, over=G.pendingRocketGameOver, can=G.step>=STEPS_PER_GYM, nw=G.pendingSwap;
+  const h = nw || (r.highlight && G.team.includes(r.highlight) ? r.highlight : null);
   const per = h && r.diff.per.get(h);
   const spot = h ? `<div class="spot ${per&&per.evo?'evo':''} ${h.shiny?'shiny':''}">${front(h)}</div>` : `<div class="spot"><span class="emo">${r.ic}</span></div>`;
   let extra="";
   r.diff.evos.forEach(([a,b])=>{ if(!r.text.includes(b)) extra+=`\n✨ <span class="reward">${a} evoluiu para ${b}!</span>`; });
   r.diff.caught.forEach(m=>{ if(m.shiny) extra+=`\n✨ <span class="reward">${m.species} é SHINY! Que sorte rara!</span>`; });
+  if(nw) extra+=`\n<span class="bad">Mas seu time está cheio!</span> Escolha abaixo quem sai pra ${nw.species} entrar, ou deixe-o ir.`;
+  if(r.swapNote) extra+=`\n${r.swapNote}`;
   const rib = r.kind==='train' ? ['info','🏋️ DIA DE TREINO'] : r.kind==='search' ? ['good','🔎 CAPTURA!'] : r.good ? ['good','★ SORTE NA ESTRADA ★'] : ['bad','⚠ PERIGO NA ESTRADA ⚠'];
   const next = over ? btn('gameover','💀 VER FIM DA CARREIRA','',{primary:true})
     : btn('back', can?'⚔️ IR PARA O DESAFIO':'🗺️ CONTINUAR NA ESTRADA', can?'Suas 3 decisões acabaram':`Decisões restantes: ${STEPS_PER_GYM-G.step}`, {primary:true});
   scene(`<div class="ribbon ${rib[0]}">${rib[1]}</div>${spot}<div class="ev-title">${r.title}</div>
-    <div class="dialog" id="tw"></div>${menu(next)}${partyHTML(r.diff)}`, 'event '+(r.good?'good':'bad'), r.text+extra);
+    <div class="dialog" id="tw"></div>${nw ? swapPanel(nw) : menu(next)+partyHTML(r.diff)}`, 'event '+(r.good?'good':'bad'), r.text+extra);
 }
 
 /* ---------- batalha estilo GBA ---------- */
@@ -1207,6 +1238,20 @@ function act(id, arg){
     case 'releaseYes': {
       const m=releaseMon(Number(arg)); G.releaseAsk=null;
       if(m) logAdd('bad','👋',`Soltou ${m.species} (Lv ${m.lv}) na natureza`);
+      break;
+    }
+    case 'swapIn': {
+      const r=G.lastResult, s=swapIn(Number(arg));
+      if(!s) return;
+      if(s.in.shiny) G.stats.shinies++;
+      logAdd('catch','🔄',`${s.in.species}${s.in.shiny?' ✨':''} (Lv ${s.in.lv}) entrou no lugar de ${s.out.species} (Lv ${s.out.lv})`);
+      r.diff=diffOf(r.before||new Map()); r.highlight=s.in;
+      r.swapNote=`🔄 <span class="reward">${s.in.species} entrou no time!</span> ${s.out.species} foi solto na natureza.`;
+      break;
+    }
+    case 'swapSkip': {
+      const r=G.lastResult, nw=skipSwap();
+      if(nw){ r.diff=diffOf(r.before||new Map()); r.swapNote=`Você deixa ${nw.species} seguir livre, mas a tentativa de captura rendeu experiência: <span class="reward">+5 níveis no time</span>.`; r.highlight=null; logAdd('bad','🍃',`Deixou ${nw.species} (Lv ${nw.lv}) ir e o time ganhou +5 níveis`); }
       break;
     }
     default: return;

@@ -67,8 +67,13 @@ print("DEX", len(TABLE), "| na grama", len(pool))
 B1 = re.sub(r"function addMon\(species,lv\)\{.*?G\.team\.push\(m\);G\.stats\.caught\+\+;return m;\}",
     "function addMon(species,lv,raw){const m=mon(species,lv);m.shiny=Math.random()<SHINY_RATE;"
     "if(!raw&&G.team.length){const s=G.team.slice().sort((a,b)=>b.lv-a.lv)[0];const fl=Math.round(s.lv*0.85);if(m.lv<fl)m.lv=fl;}"
+    "if(G.team.length>=6){G.pendingSwap=m;return m;}"
     "G.team.push(m);G.stats.caught++;return m;}", B1, count=1, flags=re.S)
 assert "function addMon(species,lv,raw)" in B1
+# time cheio não descarta mais a captura: vira escolha de troca (G.pendingSwap)
+n_guard = B1.count("if(!freeSlot())return bonusFull();")
+B1 = B1.replace("if(!freeSlot())return bonusFull();", "")
+print("capturas que agora oferecem troca:", n_guard)
 B1 = re.sub(r"function lvlAll\(n\)\{.*?\}\);\}", "function lvlAll(n){G.team.forEach(m=>{m.lv+=n;tryEvolveSilent(m);});}", B1, count=1)
 B1 = re.sub(r"function lvlOne\(m,n\)\{.*?return m;\}", "function lvlOne(m,n){m.lv+=n;tryEvolveSilent(m);return m;}", B1, count=1)
 B1 = re.sub(r"function dropLvOne\(m,n\)\{.*?return m;\}", "function dropLvOne(m,n){m.lv=Math.max(5,m.lv-n);return m;}", B1, count=1)

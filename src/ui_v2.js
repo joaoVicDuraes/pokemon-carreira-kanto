@@ -248,7 +248,7 @@ function decisionMenu(){
   return menu(
     btn('roll','🎲 GIRAR A ROLETA',`${Math.round(greenRatio()*100)}% de sorte nesta fase · rende mais na média, mas arrisca`,{primary:true}),
     btn('train','🏋️ TREINAR FIRME','+2 níveis no time inteiro · seguro'),
-    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio (6/6): solte um Pokémon na lista abaixo':'Captura garantida de um Pokémon selvagem',{disabled:G.team.length>=6}));
+    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio: se achar alguém, você escolhe quem sai':'Captura garantida de um Pokémon selvagem'));
 }
 function hub(){
   if(G.gymIndex>=GYMS.length){ if(!G.vrDone) return hubVR(); G.phase='elite'; return render(); }
@@ -314,7 +314,7 @@ function applyPicked(picked){
   const diff=diffOf(before);
   logAdd(picked.good?'good':'bad', picked.ev.ic, res.title);
   postProcess(diff);
-  G.lastResult={kind:'event', good:picked.good, ic:picked.ev.ic, title:res.title, text:res.text, highlight:res.highlight, diff};
+  G.lastResult={kind:'event', good:picked.good, ic:picked.ev.ic, title:res.title, text:res.text, highlight:res.highlight, diff, before};
   G.phase='event'; render();
 }
 function doTrain(){
@@ -327,27 +327,46 @@ function doTrain(){
   G.phase='event'; render();
 }
 function doSearch(){
-  if(G.team.length>=6) return;
   const before=snap(), w=pickWild(), m=addMon(w.species, w.lv);
   G.step++; G.day++;
   const diff=diffOf(before); postProcess(diff);
   G.lastResult={kind:'search', good:true, ic:'🔎', title:'Captura garantida!',
-    text:`Você vasculha a grama alta com calma... um <b>${m.species}</b> selvagem (Lv ${m.lv}) aparece!\nA Poké Bola balança... uma... duas... três... <span class="reward">Capturado!</span>`, highlight:m, diff};
+    text:`Você vasculha a grama alta com calma... um <b>${m.species}</b> selvagem (Lv ${m.lv}) aparece!\nA Poké Bola balança... uma... duas... três... <span class="reward">Capturado!</span>`, highlight:m, diff, before};
   G.phase='event'; render();
 }
+function swapPanel(nw){
+  const np=monPower(nw);
+  const rows=G.team.map((m,i)=>{
+    const p=monPower(m), dlt=np-p;
+    const cmp = dlt>0 ? `<i class="d d-up">${nw.species} +${dlt}</i>` : dlt<0 ? `<i class="d d-dn">${nw.species} ${dlt}</i>` : `<i class="d">igual</i>`;
+    return `<div class="mon ${i===0?'lead':''}"><div class="sp">${front(m)}</div>
+      <div><div class="m-name">${i===0?'<span class="star">★</span> ':''}${m.species}${m.shiny?' <span class="shiny">✨</span>':''}</div>
+      <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${i>0?cmp:''}</div>
+      ${i>0?`<button class="rel yes" data-act="swapIn" data-arg="${i}">TROCAR POR ${nw.species.toUpperCase()}</button>`:'<span class="evo-lbl">seu inicial não sai do time</span>'}</div>
+      <div class="m-pow">PODER<b>${p}</b></div></div>`;
+  }).join("");
+  return `<div class="swap-box"><div class="ribbon bad">TIME CHEIO!</div>
+    <div class="swap-new"><div class="sp">${front(nw)}</div><div><div class="m-name">${nw.species}${nw.shiny?' <span class="shiny">✨</span>':''} quer entrar</div>
+      <div class="m-sub">${typeTag(nw.t)}<span class="m-lv">Lv${nw.lv}</span><span class="m-lv">PODER ${np}</span></div></div></div>
+    <div class="party-h">QUEM SAI PRA ELE ENTRAR?<small>Quem sair é solto na natureza. Escolher não gasta decisão.</small></div>
+    <div class="party">${rows}</div>
+    ${menu(btn('swapSkip',`DEIXAR ${nw.species.toUpperCase()} IR`,'Time fica igual, mas ganha +5 níveis pela experiência'))}</div>`;
+}
 function eventScreen(){
-  const r=G.lastResult, over=G.pendingRocketGameOver, can=G.step>=STEPS_PER_GYM;
-  const h = r.highlight && G.team.includes(r.highlight) ? r.highlight : null;
+  const r=G.lastResult, over=G.pendingRocketGameOver, can=G.step>=STEPS_PER_GYM, nw=G.pendingSwap;
+  const h = nw || (r.highlight && G.team.includes(r.highlight) ? r.highlight : null);
   const per = h && r.diff.per.get(h);
   const spot = h ? `<div class="spot ${per&&per.evo?'evo':''} ${h.shiny?'shiny':''}">${front(h)}</div>` : `<div class="spot"><span class="emo">${r.ic}</span></div>`;
   let extra="";
   r.diff.evos.forEach(([a,b])=>{ if(!r.text.includes(b)) extra+=`\n✨ <span class="reward">${a} evoluiu para ${b}!</span>`; });
   r.diff.caught.forEach(m=>{ if(m.shiny) extra+=`\n✨ <span class="reward">${m.species} é SHINY! Que sorte rara!</span>`; });
+  if(nw) extra+=`\n<span class="bad">Mas seu time está cheio!</span> Escolha abaixo quem sai pra ${nw.species} entrar, ou deixe-o ir.`;
+  if(r.swapNote) extra+=`\n${r.swapNote}`;
   const rib = r.kind==='train' ? ['info','🏋️ DIA DE TREINO'] : r.kind==='search' ? ['good','🔎 CAPTURA!'] : r.good ? ['good','★ SORTE NA ESTRADA ★'] : ['bad','⚠ PERIGO NA ESTRADA ⚠'];
   const next = over ? btn('gameover','💀 VER FIM DA CARREIRA','',{primary:true})
     : btn('back', can?'⚔️ IR PARA O DESAFIO':'🗺️ CONTINUAR NA ESTRADA', can?'Suas 3 decisões acabaram':`Decisões restantes: ${STEPS_PER_GYM-G.step}`, {primary:true});
   scene(`<div class="ribbon ${rib[0]}">${rib[1]}</div>${spot}<div class="ev-title">${r.title}</div>
-    <div class="dialog" id="tw"></div>${menu(next)}${partyHTML(r.diff)}`, 'event '+(r.good?'good':'bad'), r.text+extra);
+    <div class="dialog" id="tw"></div>${nw ? swapPanel(nw) : menu(next)+partyHTML(r.diff)}`, 'event '+(r.good?'good':'bad'), r.text+extra);
 }
 
 /* ---------- batalha estilo GBA ---------- */
@@ -497,6 +516,20 @@ function act(id, arg){
     case 'releaseYes': {
       const m=releaseMon(Number(arg)); G.releaseAsk=null;
       if(m) logAdd('bad','👋',`Soltou ${m.species} (Lv ${m.lv}) na natureza`);
+      break;
+    }
+    case 'swapIn': {
+      const r=G.lastResult, s=swapIn(Number(arg));
+      if(!s) return;
+      if(s.in.shiny) G.stats.shinies++;
+      logAdd('catch','🔄',`${s.in.species}${s.in.shiny?' ✨':''} (Lv ${s.in.lv}) entrou no lugar de ${s.out.species} (Lv ${s.out.lv})`);
+      r.diff=diffOf(r.before||new Map()); r.highlight=s.in;
+      r.swapNote=`🔄 <span class="reward">${s.in.species} entrou no time!</span> ${s.out.species} foi solto na natureza.`;
+      break;
+    }
+    case 'swapSkip': {
+      const r=G.lastResult, nw=skipSwap();
+      if(nw){ r.diff=diffOf(r.before||new Map()); r.swapNote=`Você deixa ${nw.species} seguir livre, mas a tentativa de captura rendeu experiência: <span class="reward">+5 níveis no time</span>.`; r.highlight=null; logAdd('bad','🍃',`Deixou ${nw.species} (Lv ${nw.lv}) ir e o time ganhou +5 níveis`); }
       break;
     }
     default: return;

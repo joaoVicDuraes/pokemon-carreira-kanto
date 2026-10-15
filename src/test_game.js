@@ -41,6 +41,20 @@ console.log('eventos executados:',ran);
  act('releaseYes','0');ok(G.team[0].species==='Bulbasaur','inicial não pode ser solto');
  ok(G.log.some(l=>l.text.startsWith('Soltou')),'soltar vai pro diário');}
 
+// 3b) troca com time cheio
+{X.G=ctx.newGame();act('new');act('choose','Charmander');const G=X.G;
+ for(let i=0;i<5;i++)G.team.push(mon('Magikarp',5));
+ const step0=G.step; act('search');
+ ok(G.team.length===6 && G.pendingSwap,'time cheio deve gerar troca pendente');
+ ok(G.step===step0+1,'procurar com time cheio gasta 1 decisão (como sempre)');
+ const nw=G.pendingSwap; act('swapIn','0'); ok(G.pendingSwap===nw && G.team[0].species==='Charmander','inicial não pode ser trocado');
+ act('swapIn','3'); ok(G.team[3]===nw && !G.pendingSwap && G.team.length===6,'troca coloca o novo no lugar escolhido');
+ ok(G.log.some(l=>l.text.includes('entrou no lugar de Magikarp')),'troca vai pro diário');
+ act('search'); ok(G.pendingSwap,'segunda captura também oferece troca');
+ const lvB=G.team[0].lv; act('swapSkip'); ok(!G.pendingSwap && G.team.length===6 && G.team[0].lv===lvB+5,'deixar ir mantém o time e dá +5 níveis');
+ const g=ctx.newGame();g.gymIndex=7;g.team=[mon('Charmander',40),...Array.from({length:5},()=>mon('Magikarp',5))];X.G=g;
+ ctx.legendEvent(); ok(g.pendingSwap && ['Moltres','Mewtwo','Mew'].includes(g.pendingSwap.species),'lendário com time cheio vira troca, não some');}
+
 // 4) carreiras completas
 const POL={roleta:()=> 'roll',esperto:()=>{const G=X.G;if(G.team.length<4)return 'search';return X.greenRatio()>=0.5?'roll':'train';}};
 for(const pol of Object.keys(POL)){
@@ -50,7 +64,12 @@ for(const pol of Object.keys(POL)){
     for(let s=0;s<500;s++){const G=X.G,p=G.phase;G.team.forEach(m=>seen.add(m.species));
       if(p==='gameover'){if(G.gymIndex>=8)liga++;break;} if(p==='champion'){liga++;champ++;break;}
       if(p==='hub'){if(G.step>=3)act(G.gymIndex>=8?'league':'challenge');else{let a=POL[pol]();if(a==='search'&&G.team.length>=6)a='roll';act(a);}}
-      else if(p==='event')act(G.pendingRocketGameOver?'gameover':'back');
+      else if(p==='event'){
+        if(G.pendingSwap){const nw=G.pendingSwap;let wi=-1,wp=1e9;G.team.forEach((m,i)=>{if(i>0&&ctx.monPower(m)<wp){wp=ctx.monPower(m);wi=i;}});
+          const third=G.team.map(ctx.monPower).sort((a,b)=>b-a)[2]||0;
+          if(wi>0&&ctx.monPower(nw)>third)act('swapIn',String(wi));else act('swapSkip');
+          ok(!G.pendingSwap,'troca pendente não resolvida');}
+        act(G.pendingRocketGameOver?'gameover':'back');}
       else if(p==='battle')act(G.battle.win?'battleWin':'gameover');
       else if(p==='win')act(G.battle.isElite?'elite':'back');
       else if(p==='elite')act('fight');}

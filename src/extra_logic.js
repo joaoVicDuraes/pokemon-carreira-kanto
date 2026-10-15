@@ -33,7 +33,6 @@ GYM_EVENTS.forEach(set=>{
 
 /* Encontro lendário (reta final): única forma de ter Moltres, Mewtwo e Mew */
 function legendEvent(){
-  if(!freeSlot()) return bonusFull();
   const r=Math.random(), s = r<0.55 ? "Moltres" : r<0.85 ? "Mewtwo" : "Mew";
   const m=addMon(s, s==="Mewtwo"?44:40);
   const where = {Moltres:"No topo da Victory Road, chamas iluminam a caverna",Mewtwo:"No fundo da Caverna Cerulean, um olhar frio te encara",Mew:"Uma pequena silhueta rosa brinca entre as árvores e decide te seguir"}[s];
@@ -43,7 +42,6 @@ GYM_EVENTS[GYM_EVENTS.length-1].green.push({ic:"🌟",lb:"Lendário",fn:legendEv
 
 /* Fóssil do Mt. Moon (roleta rumo a Cerulean): Omanyte ou Kabuto */
 function fossilEvent(){
-  if(!freeSlot()) return bonusFull();
   const helix=Math.random()<0.5, s=helix?"Omanyte":"Kabuto";
   const m=addMon(s,14);
   return {title:"Fóssil do Mt. Moon", text:`No fundo do Mt. Moon você escolhe o <b>${helix?"Fóssil Hélix":"Fóssil Domo"}</b>. Um cientista do Museu de Pewter o revive na hora: <span class="reward">${s} (Lv ${m.lv}) entrou para o time!</span>`, highlight:m};
@@ -57,3 +55,14 @@ function releaseMon(i){
   G.stats.released=(G.stats.released||0)+1;
   return m;
 }
+
+/* Troca com time cheio: o recém-chegado entra no lugar de quem você escolher */
+function swapIn(i){
+  const nw=G.pendingSwap;
+  if(!nw || i<=0 || i>=G.team.length) return null;
+  const out=G.team[i];
+  G.team[i]=nw; G.pendingSwap=null;
+  G.stats.caught++; G.stats.released=(G.stats.released||0)+1;
+  return {in:nw, out};
+}
+function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5); return nw; }

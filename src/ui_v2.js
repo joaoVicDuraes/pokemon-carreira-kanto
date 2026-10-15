@@ -25,6 +25,7 @@ function front(m, cls){
   return src ? `<img${cls ? ` class="${cls}"` : ""} src="${src}" alt="${m.species}">` : `<span class="emo">${m.e || "❔"}</span>`;
 }
 /* líderes e treinadores (sprites FRLG) e insígnias de Kanto */
+const FEM = f => ["Misty","Erika","Sabrina","Lorelei","Agatha"].includes(f.leader);
 function trainerKey(name){ return /Rival|Champion/.test(name) ? 'blue' : name.toLowerCase().replace(/[^a-z]/g,''); }
 function leaderImg(foe, cls){
   const src = TRAINERS[trainerKey(foe.leader)];
@@ -301,11 +302,11 @@ function hubVR(){
 /* ---------- roleta circular ---------- */
 let SPIN=0;
 function rouletteScreen(){
-  const tok=++SPIN, set=currentGymSet(), gr=greenRatio(), picked=rollGymEvent();
-  const redW=set.red.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
-  const sectors=[];
-  set.green.forEach((ev,i)=>sectors.push({ev, frac:gr/set.green.length, col:i%2?'url(#gG1)':'url(#gG2)'}));
-  set.red.forEach((ev,i)=>sectors.push({ev, frac:(1-gr)*redW[i]/totR, col:ev.loss?'url(#gL)':(i%2?'url(#gR1)':'url(#gR2)')}));
+  const tok=++SPIN, picked=rollGymEvent(), live=wheelSectors();
+  const gr=live.filter(s=>s.good).reduce((a,s)=>a+s.frac,0);   // chance real de sorte nesta roda
+  const sectors=live.map(s=>({ev:s.ev, frac:s.frac,
+    col: s.good ? (s.i%2?'url(#gG1)':'url(#gG2)') : s.ev.loss ? 'url(#gL)' : (s.i%2?'url(#gR1)':'url(#gR2)')}));
+  const gone=usedLabels().length;
   const R=112, C=135, pol=(r,deg)=>{ const a=deg*Math.PI/180; return [C+r*Math.cos(a), C+r*Math.sin(a)]; };
   sectors.forEach(s=>{ if(s.ev.lb==='Pedra evolutiva') s.col='url(#gS)'; });
   let ang=-90, tStart=-90, tSweep=10, paths="", icons="", hitIdx=0;
@@ -340,7 +341,7 @@ function rouletteScreen(){
         <circle cx="${C}" cy="${C}" r="133.5" fill="none" stroke="#2b2b2b" stroke-width="3"/><circle cx="${C}" cy="${C}" r="112" fill="none" stroke="#2b2b2b" stroke-width="3"/>${bulbs}</svg>
       <div class="wheel-hub"><div class="hub-glow"></div><div class="pokeball"><i></i></div></div></div>
     <div class="legend"><span class="lg g">🍀 SORTE ${Math.round(gr*100)}%</span><span class="lg r">💀 PERIGO ${Math.round((1-gr)*100)}%</span></div>
-    <div class="legend"><span class="lg k">❗ PERDA DE POKéMON (RARO)</span></div>
+    <div class="legend"><span class="lg k">❗ PERDA DE POKéMON (RARO)</span>${gone?`<span class="lg n">${gone} EVENTO${gone>1?'S':''} JÁ SAIU${gone>1?'RAM':''} DA RODA</span>`:''}</div>
     <div class="dialog" id="tw"></div>`, '', 'A roleta gira... o que a estrada reserva pra você?');
   const wheel=document.getElementById('wheel'), wrap=document.getElementById('wwrap');
   const land=tStart+tSweep*(0.25+Math.random()*0.5);
@@ -354,7 +355,7 @@ function rouletteScreen(){
   setTimeout(go,5200);
 }
 function applyPicked(picked){
-  const before=snap(); G.day++; G.step++;
+  const before=snap(); G.day++; G.step++; markUsed(picked.ev);
   const res=picked.ev.fn(G);
   if(G.pendingRocketGameOver && G.team.length) G.team.pop();   // a Rocket leva o último parceiro
   if(picked.good) G.stats.eventsGood++; else G.stats.eventsBad++;
@@ -428,7 +429,7 @@ function challenge(isElite){
 function setBar(el,pct){ if(!el) return; el.style.width=pct+'%'; el.style.background=pct>50?'#58D080':pct>20?'#F8D030':'#F05838'; }
 function battleScreen(){
   const b=G.battle, f=b.foe, me=bestAttacker(f.t);
-  const intro = b.isElite ? (G.eliteIndex===ELITE.length-1 ? `O CAMPEÃO, seu antigo Rival, quer batalhar!` : `${f.leader}, da Elite Four, quer batalhar!`) : `O Líder ${f.leader} quer batalhar!`;
+  const intro = b.isElite ? (G.eliteIndex===ELITE.length-1 ? `O CAMPEÃO, seu antigo Rival, quer batalhar!` : `${f.leader}, da Elite Four, quer batalhar!`) : `${FEM(f)?'A Líder':'O Líder'} ${f.leader} quer batalhar!`;
   scene(`<div class="field">
       <div class="hpbox foe"><div class="hp-name"><span>${f.leader.toUpperCase()}</span>${typeTag(f.t)}</div><div class="hpbar"><span>PD</span><div class="track"><i id="hpF"></i></div></div><div class="hp-num">PODER ${f.power}</div></div>
       <div class="plat f"></div><div class="foe-av" id="avF">${leaderImg(f,'foe-tr')}</div>
@@ -453,7 +454,7 @@ function runBattle(me){
   });
   T(3300,()=>{
     const loser=document.getElementById(b.win?'avF':'avM'); if(loser){ loser.classList.remove('shake'); loser.classList.add('faint'); }
-    typewrite(document.getElementById('tw'), b.win ? `${b.foe.leader} foi derrotado!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
+    typewrite(document.getElementById('tw'), b.win ? `${b.foe.leader} foi derrotad${FEM(b.foe)?'a':'o'}!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
   });
   T(4000,()=>{ const bm=document.getElementById('bmenu'); bm.innerHTML = menu(b.win ? btn('battleWin','CONTINUAR','',{primary:true}) : btn('gameover','💀 FIM DA CARREIRA','',{primary:true})); try{ fixPx(bm); }catch(e){} });
 }
@@ -480,7 +481,7 @@ function winScreen(){
   const {b, diff}=G.lastWin;
   if(b.isElite){
     const nx=ELITE[G.eliteIndex];
-    scene(`<div class="ribbon good">VITÓRIA NA LIGA!</div><div class="badge-pop tr">${leaderImg(b.foe)}</div><div class="ev-title">${b.foe.leader} derrotado!</div>
+    scene(`<div class="ribbon good">VITÓRIA NA LIGA!</div><div class="badge-pop tr">${leaderImg(b.foe)}</div><div class="ev-title">${b.foe.leader} derrotad${FEM(b.foe)?'a':'o'}!</div>
       <div class="reward-line">TIME +1 NÍVEL · SEM DESCANSO</div>${e4Strip()}<div class="dialog" id="tw"></div>
       ${menu(btn('elite',`➡️ ENFRENTAR ${nx.leader.toUpperCase()}`,'',{primary:true}))}${partyHTML(diff)}`, 'event good',
       `${b.foe.leader}: "Impressionante... mas o próximo não vai ser tão gentil."\nPróximo: ${nx.leader}, poder ${nx.power}.`);

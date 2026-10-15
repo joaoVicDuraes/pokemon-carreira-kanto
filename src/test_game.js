@@ -55,6 +55,24 @@ console.log('eventos executados:',ran);
  const g=ctx.newGame();g.gymIndex=7;g.team=[mon('Charmander',40),...Array.from({length:5},()=>mon('Magikarp',5))];X.G=g;
  ctx.legendEvent(); ok(g.pendingSwap && ['Moltres','Mewtwo','Mew'].includes(g.pendingSwap.species),'lendário com time cheio vira troca, não some');}
 
+// 3c) roleta sem repetição no mesmo ginásio: fatias somam 1, sorte/perigo e perda rara preservadas
+for(let gi=0;gi<=8;gi++){
+  const g=ctx.newGame();g.gymIndex=gi;g.team=[mon('Charmander',20)];X.G=g;
+  const sum=s=>s.reduce((a,x)=>a+x.frac,0), lossOf=s=>sum(s.filter(x=>x.ev.loss)), greenOf=s=>sum(s.filter(x=>x.good));
+  const base=ctx.wheelSectors(), gr=X.greenRatio(), loss0=lossOf(base);
+  for(let k=0;k<500;k++){                       // 500 sequências de 3 giros
+    g.used=null; const seen=[];
+    for(let t=0;t<3;t++){
+      const p=ctx.rollGymEvent(); ok(!seen.includes(p.ev.lb),`ginásio ${gi+1}: "${p.ev.lb}" repetiu`); seen.push(p.ev.lb); ctx.markUsed(p.ev);
+      const s=ctx.wheelSectors();
+      const both=s.some(x=>x.good)&&s.some(x=>!x.good&&!x.ev.loss);   // ainda há verde e vermelho "leve"
+      if(Math.abs(sum(s)-1)>1e-9 || (both && Math.abs(greenOf(s)-gr)>1e-9)) { ok(false,`ginásio ${gi+1}: proporções quebradas`); break; }
+      if(lossOf(s)>loss0+1e-9 && s.some(x=>!x.ev.loss)) { ok(false,`ginásio ${gi+1}: perda de Pokémon ficou mais provável (${lossOf(s).toFixed(3)} > ${loss0.toFixed(3)})`); break; }
+    }
+  }
+  if(gi<8){ g.gymIndex=gi+1; ok(ctx.usedLabels().length===0,'lista de eventos usados deve zerar no próximo ginásio'); }
+}
+
 // 4) carreiras completas
 const POL={roleta:()=> 'roll',esperto:()=>{const G=X.G;if(G.team.length<4)return 'search';return X.greenRatio()>=0.5?'roll':'train';}};
 for(const pol of Object.keys(POL)){

@@ -66,3 +66,37 @@ function swapIn(i){
   return {in:nw, out};
 }
 function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5); return nw; }
+
+
+/* ============ Roleta sem repetição dentro do mesmo ginásio ============
+   O evento que saiu sai da roda até o próximo ginásio (ou até sair da Victory Road).
+   A fatia removida é dividida entre as fatias da MESMA cor que não tiram Pokémon,
+   então a proporção sorte/perigo da fase fica igual e a perda de Pokémon continua rara. */
+function usedLabels(){
+  const key = G.gymIndex>=GYMS.length ? "vr" : "g"+G.gymIndex;
+  if(!G.used || G.used.key!==key) G.used={key, lb:[]};
+  return G.used.lb;
+}
+function markUsed(ev){ const u=usedLabels(); if(!u.includes(ev.lb)) u.push(ev.lb); }
+function wheelSectors(){
+  const set=currentGymSet(), gr=greenRatio(), used=usedLabels();
+  const redW=set.red.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
+  const all=[];
+  set.green.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr/set.green.length}));
+  set.red.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
+  const keep=all.filter(s=>!used.includes(s.ev.lb));
+  if(!keep.length) return all;                      // segurança: nunca roda vazia
+  all.filter(s=>used.includes(s.ev.lb)).forEach(gone=>{
+    let to=keep.filter(s=>s.good===gone.good && !s.ev.loss);
+    if(!to.length) to=keep.filter(s=>!s.ev.loss);
+    if(!to.length) to=keep;
+    const tot=to.reduce((a,s)=>a+s.frac,0);
+    to.forEach(s=>{ s.frac+=gone.frac*s.frac/tot; });
+  });
+  return keep;
+}
+function rollGymEvent(){
+  const sec=wheelSectors(); let r=Math.random()*sec.reduce((a,s)=>a+s.frac,0);
+  for(const s of sec){ r-=s.frac; if(r<=0) return {ev:s.ev, good:s.good}; }
+  const s=sec[sec.length-1]; return {ev:s.ev, good:s.good};
+}

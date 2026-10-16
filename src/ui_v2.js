@@ -17,6 +17,27 @@ const LEADER_LINES = [
 const TYPE_PT = {fire:"Fogo",water:"Água",grass:"Planta",electric:"Elétrico",normal:"Normal",poison:"Veneno",rock:"Pedra",psychic:"Psíquico",ghost:"Fantasma",fighting:"Lutador",ground:"Terra",bug:"Inseto",flying:"Voador",ice:"Gelo",dragon:"Dragão",dark:"Sombrio",steel:"Aço"};
 const REDUCE = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
+/* ---------- opções do jogador: tema (auto/claro/escuro) e velocidade do texto ---------- */
+const OPTS = (()=>{ try{ return Object.assign({theme:'auto', txt:'normal'}, JSON.parse(localStorage.getItem('kc_opts'))||{}); }catch(e){ return {theme:'auto', txt:'normal'}; } })();
+function saveOpts(){ try{ localStorage.setItem('kc_opts', JSON.stringify(OPTS)); }catch(e){} }
+/* caracteres por quadro do texto letra-por-letra (0 = instantâneo) e fator das pausas da batalha */
+const TXT_STEP = {normal:2, fast:6, instant:0}, TXT_PACE = {normal:1, fast:0.65, instant:0.45};
+function isDark(){
+  if(OPTS.theme==='dark') return true;
+  if(OPTS.theme==='light') return false;
+  return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
+function applyTheme(){
+  const dk=isDark();
+  try{ document.body.dataset.theme = dk ? 'dark' : 'light'; }catch(e){}
+  try{ const m=document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', dk ? '#0B1022' : (THEME_COLOR[document.body.dataset.region]||'#E3350D')); }catch(e){}
+}
+const THEME_COLOR = {kanto:'#E3350D', johto:'#2F6FD6', hoenn:'#2E9E5B'};
+try{ const mq=window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)'); if(mq && mq.addEventListener) mq.addEventListener('change', ()=>{ if(OPTS.theme==='auto') applyTheme(); }); }catch(e){}
+
+/* ícones de item em pixel art (PokeAPI) no lugar dos emojis dos botões */
+function ico(name){ const s=typeof ITEMS!=='undefined' && ITEMS[name]; return s ? `<img class="ic-px" src="${s}" alt="" aria-hidden="true">` : ''; }
+
 /* ---------- sprites ---------- */
 function frontSrc(sp, shiny){ return (shiny && SHINY[sp]) || SPRITES[sp] || ""; }
 function backSrc(m){ return (m.shiny && SHINY_BACKS[m.species]) || BACKS[m.species] || frontSrc(m.species, m.shiny); }
@@ -112,7 +133,7 @@ let TW=null;
 function typewrite(el, html){
   if(TW){ clearInterval(TW.t); TW=null; }
   el.classList.remove('done');
-  if(REDUCE() || !html){ el.innerHTML=html||""; el.classList.add('done'); return; }
+  if(REDUCE() || !html || !TXT_STEP[OPTS.txt]){ el.innerHTML=html||""; el.classList.add('done'); return; }
   const toks=[]; let i=0;
   while(i<html.length){
     const c=html[i];
@@ -124,7 +145,7 @@ function typewrite(el, html){
   const st={el};
   st.finish=()=>{ clearInterval(st.t); el.innerHTML=html; el.classList.add('done'); if(TW===st) TW=null; };
   st.t=setInterval(()=>{
-    let added=0; while(n<toks.length && added<2){ if(toks[n++][0]!=='<') added++; }
+    let added=0; const per=TXT_STEP[OPTS.txt]||2; while(n<toks.length && added<per){ if(toks[n++][0]!=='<') added++; }
     el.innerHTML=toks.slice(0,n).join("");
     if(n>=toks.length) st.finish();
   },16);
@@ -135,7 +156,7 @@ function typewrite(el, html){
 /* ---------- moldura de tela ---------- */
 const $scene=document.getElementById('scene'), $hud=document.getElementById('hud');
 /* a fonte pixel não tem maiúsculas acentuadas (Á, Í, Ó...): troca só nos rótulos em PS2P */
-const PX_SEL='.ribbon,.ev-title,.reward-line,.btn,.lc-name,.lc-top,.type,.chip,.m-name,.m-lv,.press,.rec-h,.foot,.party-h,.pips,.legend,.vs-row,.chance,.mtag,.hp-name,.hp-num,.tc-head,.log-h,.over-title,.hof-title,.logo-sub,.logo-ed,.vsb,.e4 small,.lc-badge small,.how-card h4,.rec-grid span,.newrec,.speaker,.d,.m-pow,.nm';
+const PX_SEL='.ribbon,.ev-title,.reward-line,.btn,.lc-name,.lc-top,.type,.chip,.m-name,.m-lv,.press,.rec-h,.foot,.party-h,.pips,.legend,.vs-row,.chance,.mtag,.hp-name,.hp-num,.tc-head,.log-h,.over-title,.hof-title,.logo-sub,.logo-ed,.vsb,.e4 small,.lc-badge small,.how-card h4,.rec-grid span,.newrec,.speaker,.d,.m-pow,.nm,.seg,.opt-row>span,.ps b,.dx-f,.dxd-h';
 const ACC={'Á':'A','À':'A','Â':'A','Ã':'A','É':'E','Ê':'E','Í':'I','Ó':'O','Ô':'O','Õ':'O','Ú':'U'};
 function fixPx(root){
   if(!root || !root.querySelectorAll) return;
@@ -186,6 +207,21 @@ function pips(){
   let h='<div class="pips">';
   for(let i=0;i<STEPS_PER_GYM;i++) h+=`<span class="mini-ball ${i<G.step?'used':''}"></span>`;
   return h+`<span>DECISÕES RESTANTES: ${Math.max(0,STEPS_PER_GYM-G.step)}</span></div>`; }
+/* líder + barras de poder num bloco só (o hub cabe na tela do celular) */
+function foeBlock(av, top, name, sub, badge, power, t, kind){
+  return `<div class="foe-card">${leaderCard(av, top, name, sub, badge)}${vsBox(power, t, kind)}</div>`; }
+/* faixa com os 6 espaços do time: o time fica visível sem rolar a tela; tocar leva à lista completa */
+function partyStrip(){
+  if(!G.team.length) return '';
+  const top=new Set(topThree());
+  let h='';
+  for(let i=0;i<6;i++){
+    const m=G.team[i];
+    h += m ? `<span class="ps ${i===0?'lead':''} ${top.has(m)&&G.team.length>3?'top':''}">${front(m)}<b>${m.egg?'OVO':'Lv'+m.lv}</b></span>`
+           : `<span class="ps empty"></span>`;
+  }
+  return `<button class="pstrip" data-act="seeTeam" aria-label="Ver o time completo (${G.team.length} de 6)">${h}</button>`;
+}
 
 /* ---------- time (estilo menu de party) ---------- */
 function partyHTML(diff, opts){
@@ -229,39 +265,49 @@ function partyHTML(diff, opts){
   }).join("");
   const lost=diff ? diff.lost.map(l=>`<div class="mon lost"><div class="sp">${front(l)}</div><div><div class="m-name">${l.species}</div><div class="m-sub"><i class="d d-dn">PERDIDO</i></div></div><div></div></div>`).join("") : "";
   const hint = opts.manage && G.team.length>1 ? ' Solte quem não ajuda pra liberar espaço (não gasta decisão; o inicial fica).' : '';
-  return `<div class="party-h">SEU TIME (${G.team.length}/6)<small>O poder vem dos 3 mais fortes${G.team.length>3?' — marcados com TOP3':''}. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
+  return `<div class="party-h" id="party">SEU TIME (${G.team.length}/6)<small>O poder vem dos 3 mais fortes${G.team.length>3?' — marcados com TOP3':''}. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
 }
 
 /* =====================================================================
    TELAS
    ===================================================================== */
+function optionsCard(){
+  const seg=(act, cur, list)=>list.map(([v,l])=>`<button class="seg ${cur===v?'on':''}" data-act="${act}" data-arg="${v}" aria-pressed="${cur===v}">${l}</button>`).join('');
+  return `<div class="rec-card opts"><div class="rec-h">⚙️ OPÇÕES</div>
+    <div class="opt-row"><span>TEMA</span><div class="segs">${seg('optTheme', OPTS.theme, [['auto','AUTO'],['light','CLARO'],['dark','ESCURO']])}</div></div>
+    <div class="opt-row"><span>TEXTO</span><div class="segs">${seg('optTxt', OPTS.txt, [['normal','NORMAL'],['fast','RÁPIDO'],['instant','JÁ']])}</div></div></div>`;
+}
 function title(){
-  const LR=REGIONS[LOBBY], ready=LR.ready;
-  const srcs = ready ? STARTERS.map(s=>[s,SPRITES[s]]) : (LOBBY_PREVIEW[LOBBY]||[]).map((u,i)=>[['Chikorita','Cyndaquil','Totodile'][i],u]);
+  const LR=REGIONS[LOBBY], ready=LR.ready, soon=!!LR.soon;
+  const srcs = ready ? STARTERS.map(s=>[s,SPRITES[s]]) : (LOBBY_PREVIEW[LOBBY]||[]).map((u,i)=>[(LR.RT.starters||[])[i]||'',u]);
   const st=srcs.map(([s,u],i)=>`<img class="t-spr hop" style="animation-delay:${i*0.25}s" src="${u}" alt="${s}">`).join("");
   const r=ready?loadRec():{};
   const rec = r.runs
     ? `<div class="rec-grid"><div><span>CARREIRAS</span><b>${r.runs}</b></div><div><span>RECORDE</span><b>${r.bestBadges||0}/8</b></div><div><span>CAMPEÃO</span><b>${r.champs||0}×</b></div><div><span>SHINIES</span><b>${r.shinies||0}</b></div></div>`
     : `<div class="rec-empty">Nenhuma carreira ainda. Sua lenda começa agora.</div>`;
-  const sv=ready?loadSave():null, dk=ready?dexCounts():{c:0}, tot=ready?DEX_LIST.length:251;
-  const dexBtn=btn('dex',`📕 POKéDEX ${dk.c}/${tot}`,`Tudo que você já registrou em ${LR.RT.name}`);
-  const main = !ready
+  const sv=ready?loadSave():null, dk=ready?dexCounts():{c:0}, tot=ready?DEX_LIST.length:(LR.RT.dexTotal||251);
+  const dexBtn=btn('dex',`<span class="ic-dex" aria-hidden="true"></span>POKéDEX ${dk.c}/${tot}`,`Tudo que você já registrou em ${LR.RT.name}`);
+  const howBtn=btn('how',`${ico('teachy-tv')}COMO JOGAR`,'Estrada, roleta, tipos e a Liga');
+  const main = soon
+    ? menu(btn('noop',`🔒 ${LR.RT.name.toUpperCase()} · EM BREVE`, LR.RT.soonText||'Essa região chega numa próxima atualização.',{disabled:true}))
+    : !ready
     ? menu(btn('noop', LR.failed?`⚠️ NÃO DEU PRA CARREGAR ${LR.RT.name.toUpperCase()}`:`⏳ CARREGANDO ${LR.RT.name.toUpperCase()}...`, LR.failed?'Confira a internet e toque em ▶ de novo.':'Baixando os Pokémon da região, só um instante.',{disabled:true}))
     : G.confirmNew
     ? menu(btn('new','SIM, COMEÇAR DO ZERO','A carreira salva será apagada',{primary:true}), btn('newNo','NÃO, VOLTAR'))
-    : sv ? menu(btn('continue','▶ CONTINUAR CARREIRA', saveSummary(sv), {primary:true}), btn('new','NOVO JOGO','Apaga a carreira salva'), dexBtn, btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'))
-    : menu(btn('new','NOVO JOGO',`Comece em ${LR.RT.home} com seu primeiro parceiro`,{primary:true}), dexBtn, btn('how','COMO JOGAR','Estrada, roleta, tipos e a Liga'));
+    : sv ? menu(btn('continue',`${ico('town-map')}CONTINUAR CARREIRA`, saveSummary(sv), {primary:true}), btn('new','NOVO JOGO','Apaga a carreira salva'), dexBtn, howBtn)
+    : menu(btn('new',`${ico('poke-ball')}NOVO JOGO`,`Comece em ${LR.RT.home} com seu primeiro parceiro`,{primary:true}), dexBtn, howBtn);
   const dots=REGION_ORDER.map(id=>`<i class="${id===LOBBY?'on':''}"></i>`).join("");
-  scene(`<div class="title-sky"><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+  scene(`<div class="title-sky"><div class="stars"></div><div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
       <div class="logo"><div class="logo-main">POKéMON</div><div class="logo-sub">CARREIRA DE TREINADOR</div><div class="logo-ed">${LR.RT.edition}</div></div>
       <div class="region-sw"><button class="rg-arrow" data-act="regPrev" aria-label="Região anterior">◀</button>
         <div class="rg-name"><b>${LR.RT.name.toUpperCase()}</b><span class="rg-dots">${dots}</span></div>
         <button class="rg-arrow" data-act="regNext" aria-label="Próxima região">▶</button></div>
-      <div class="pokeball title-ball"><i></i></div><div class="starters">${st}</div><div class="grass"></div></div>
+      <div class="pokeball title-ball"><i></i></div><div class="starters ${soon?'soon':''}">${st}</div><div class="grass"></div></div>
     <div class="title-menu"><div class="press">— PRESSIONE START —</div>
       ${main}
-      <div class="rec-card"><div class="rec-h">🏆 SEUS RECORDES</div>${rec}</div>
-      <div class="foot">${tot} POKéMON · 8 GINÁSIOS · ELITE FOUR<br>FAN GAME · SPRITES FIRERED/LEAFGREEN · TECLAS 1-6 ESCOLHEM · ← → TROCAM A REGIÃO</div></div>`, 'title');
+      ${soon?'':`<div class="rec-card"><div class="rec-h">🏆 SEUS RECORDES</div>${rec}</div>`}
+      ${optionsCard()}
+      <div class="foot">${tot} POKéMON · 8 GINÁSIOS · ELITE FOUR<br>FAN GAME · SPRITES GBA<span class="kb"> · TECLAS 1-6 ESCOLHEM · ← → TROCAM A REGIÃO</span><span class="tch"> · ARRASTE PRO LADO PRA TROCAR A REGIÃO</span></div></div>`, 'title');
 }
 
 function how(){
@@ -289,7 +335,9 @@ function pickScreen(){
     const ch=chain(s).map((c,i)=>(i?'<span>›</span>':'')+`<img src="${SPRITES[c]}" alt="${c}">`).join("");
     return `<button class="scard" data-act="choose" data-arg="${s}"><img class="big" src="${SPRITES[s]}" alt="${s}"><div class="nm">${s.toUpperCase()}</div>${typeTag(d.t)}<div class="chain">${ch}</div><div class="vsb ${v[0]}">${v[1]}</div></button>`;
   }).join("");
-  scene(`<div class="lab"><div class="prof">${RT.profIc}</div><div class="lab-ball-row"><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div></div></div>
+  const profSrc = RT.profKey && TRAINERS[RT.profKey];
+  const prof = profSrc ? `<img class="prof-img" src="${profSrc}" alt="${RT.prof}">` : RT.profIc;
+  scene(`<div class="lab"><div class="prof">${prof}</div><div class="lab-ball-row"><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div><div class="pokeball sm"><i></i></div></div></div>
     <span class="speaker">${RT.prof.toUpperCase()}</span><div class="dialog" id="tw"></div><div class="starters-pick">${cards}</div>`, '',
     'Olá! Bem-vindo ao mundo POKéMON!\nO caminho até a Liga é duro: 8 ginásios, a Elite Four e nenhuma segunda chance. Escolha seu primeiro parceiro com sabedoria!');
 }
@@ -302,10 +350,10 @@ function chooseStarter(s){
 }
 
 function decisionMenu(){
-  return menu(
-    btn('roll','🎲 GIRAR A ROLETA',`${Math.round(greenRatio()*100)}% de sorte nesta fase · rende mais na média, mas arrisca`,{primary:true}),
-    btn('train','🏋️ TREINAR FIRME','+2 níveis no time inteiro · seguro'),
-    btn('search','🔎 PROCURAR NA GRAMA', G.team.length>=6?'Time cheio: se achar alguém, você escolhe quem sai':'Captura garantida de um Pokémon selvagem'));
+  return `<div class="menu split">${
+    btn('roll',`${ico('coin-case')}GIRAR A ROLETA`,`${Math.round(greenRatio()*100)}% de sorte nesta fase · rende mais na média, mas arrisca`,{primary:true})
+  }${btn('train',`${ico('protein')}TREINAR`,'+2 níveis no time · seguro')
+  }${btn('search',`${ico('poke-ball')}PROCURAR`, G.team.length>=6?'Time cheio: você escolhe quem sai':'Captura garantida')}</div>`;
 }
 function hub(){
   if(G.silver) return hubSilver();
@@ -315,20 +363,20 @@ function hub(){
   const tw = can ? `Suas 3 decisões acabaram. ${g.leader} te espera no Ginásio de ${city}!`
                  : `Rumo a ${city}. Faltam ${STEPS_PER_GYM-G.step} decisões antes de enfrentar ${g.leader}. O que você faz?`;
   scene(`<div class="ribbon info">ROTA → ${city.toUpperCase()} · GINÁSIO ${g.n}/8</div>
-    ${leaderCard(leaderImg(g),'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${badgeImg(g.n-1)}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`)}
-    ${vsBox(g.power,g.t,'gym')}${pips()}<div class="dialog" id="tw"></div>
+    ${foeBlock(leaderImg(g),'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${badgeImg(g.n-1)}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`, g.power, g.t, 'gym')}
+    ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('challenge',`⚔️ DESAFIAR ${g.leader.toUpperCase()}`,'Perdeu, acabou a carreira',{primary:true})) : decisionMenu()}
-    ${partyHTML(null,{manage:true})}`, '', tw);
+    ${partyHTML(null,{manage:true})}`, 'hubs', tw);
 }
 function hubVR(){
   const e=ELITE[0], can=G.step>=STEPS_PER_GYM;
   const tw = can ? 'A Victory Road ficou para trás. As portas do Platô Índigo se abrem...'
                  : `Victory Road: a última estrada antes da Liga. Depois daqui são 5 batalhas seguidas, sem voltar. Faltam ${STEPS_PER_GYM-G.step} decisões.`;
   scene(`<div class="ribbon info">🛤️ VICTORY ROAD → PLATÔ ÍNDIGO</div>
-    ${leaderCard(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`)}
-    ${vsBox(e.power,e.t,'elite')}${pips()}<div class="dialog" id="tw"></div>
+    ${foeBlock(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`, e.power, e.t, 'elite')}
+    ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('league','🏛️ ENTRAR NO PLATÔ ÍNDIGO','Sem volta a partir daqui',{primary:true})) : decisionMenu()}
-    ${partyHTML(null,{manage:true})}`, '', tw);
+    ${partyHTML(null,{manage:true})}`, 'hubs', tw);
 }
 
 /* ---------- roleta circular ---------- */
@@ -411,7 +459,7 @@ function applyPicked(picked){
   const diff=diffOf(before);
   logAdd(picked.good?'good':'bad', picked.ev.ic, res.title);
   postProcess(diff);
-  G.lastResult={kind:'event', good:picked.good, ic:picked.ev.ic, title:res.title, text:res.text, highlight:res.highlight, diff, before};
+  G.lastResult={kind:'event', lb:picked.ev.lb, good:picked.good, ic:picked.ev.ic, title:res.title, text:res.text, highlight:res.highlight, diff, before};
   G.phase='event'; render();
 }
 function doTrain(){
@@ -453,7 +501,14 @@ function eventScreen(){
   const r=G.lastResult, over=G.pendingRocketGameOver, can=G.step>=STEPS_PER_GYM, nw=G.pendingSwap;
   const h = nw || (r.highlight && G.team.includes(r.highlight) ? r.highlight : null);
   const per = h && r.diff.per.get(h);
-  const spot = h ? `<div class="spot ${per&&per.evo?'evo':''} ${h.shiny?'shiny':''}">${front(h)}</div>` : `<div class="spot"><span class="emo">${r.ic}</span></div>`;
+  /* o ícone do evento (ex.: o Weedle do "Veneno de Weedle") é o protagonista da cena; o Pokémon afetado
+     aparece pequeno ao lado. Quando o evento te DÁ ou EVOLUI um Pokémon, ele é que fica grande. */
+  const evSrc = r.lb ? wheelIconSrc({lb:r.lb}) : null, wk=r.lb && WHEEL_ICON[r.lb];
+  const rewardIsMon = h && (nw || (per && (per.isNew || per.evo)) || (wk && wk.slice(2)===h.species));
+  let spot;
+  if(evSrc && !rewardIsMon){
+    spot = `<div class="spot"><img class="${wk[0]==='T'?'ev-tr':''}" src="${evSrc}" alt="">${h?`<div class="spot-sub">${front(h)}</div>`:''}</div>`;
+  } else spot = h ? `<div class="spot ${per&&per.evo?'evo':''} ${h.shiny?'shiny':''}">${front(h)}</div>` : `<div class="spot"><span class="emo">${r.ic}</span></div>`;
   let extra="";
   r.diff.evos.forEach(([a,b])=>{ if(a==='Ovo') extra+=`\n🥚 <span class="reward">O ovo chocou: é um ${b}!</span>`; else if(!r.text.includes(b)) extra+=`\n✨ <span class="reward">${a} evoluiu para ${b}!</span>`; });
   r.diff.caught.forEach(m=>{ if(m.shiny) extra+=`\n✨ <span class="reward">${m.species} é SHINY! Que sorte rara!</span>`; });
@@ -462,7 +517,7 @@ function eventScreen(){
   if(r.swapNote) extra+=`\n${r.swapNote}`;
   const rib = r.kind==='train' ? ['info','🏋️ DIA DE TREINO'] : r.kind==='search' ? ['good','🔎 CAPTURA!'] : r.good ? ['good','★ SORTE NA ESTRADA ★'] : ['bad','⚠ PERIGO NA ESTRADA ⚠'];
   const next = over ? btn('gameover','💀 VER FIM DA CARREIRA','',{primary:true})
-    : btn('back', can?'⚔️ IR PARA O DESAFIO':'🗺️ CONTINUAR NA ESTRADA', can?'Suas 3 decisões acabaram':`Decisões restantes: ${STEPS_PER_GYM-G.step}`, {primary:true});
+    : btn('back', can?'⚔️ IR PARA O DESAFIO':`${ico('bicycle')}CONTINUAR NA ESTRADA`, can?'Suas 3 decisões acabaram':`Decisões restantes: ${STEPS_PER_GYM-G.step}`, {primary:true});
   scene(`<div class="ribbon ${rib[0]}">${rib[1]}</div>${spot}<div class="ev-title">${r.title}</div>
     <div class="dialog" id="tw"></div>${nw ? swapPanel(nw) : menu(next)+partyHTML(r.diff)}`, 'event '+(r.good?'good':'bad'), r.text+extra);
 }
@@ -488,27 +543,44 @@ function battleScreen(){
     </div><div class="dialog" id="tw"></div><div id="bmenu"></div>`, 'battle', `${intro}\nVai, ${me.species}!`);
   runBattle(me);
 }
+/* golpe-assinatura de cada tipo (nomes da dublagem brasileira) para as falas da batalha */
+const TYPE_MOVE = {fire:"Lança-Chamas",water:"Surf",grass:"Folha Navalha",electric:"Choque do Trovão",normal:"Golpe Corpo",poison:"Bomba de Lodo",
+  rock:"Deslizamento de Pedras",psychic:"Psíquico",ghost:"Bola Sombria",fighting:"Submissão",ground:"Terremoto",bug:"Tesoura X",flying:"Ataque de Asa",
+  ice:"Raio de Gelo",dragon:"Fúria do Dragão",dark:"Triturar",steel:"Cauda de Ferro"};
 function runBattle(me){
-  const tok=++BT, b=G.battle, red=REDUCE();
-  const T=(ms,fn)=>setTimeout(()=>{ if(tok===BT && G.phase==='battle') fn(); }, red?0:ms);
-  const avM=document.getElementById('avM');
+  const tok=++BT, b=G.battle, red=REDUCE(), pace=TXT_PACE[OPTS.txt]||1;
+  const T=(ms,fn)=>setTimeout(()=>{ if(tok===BT && G.phase==='battle') fn(); }, red?0:Math.round(ms*pace));
+  const avM=document.getElementById('avM'), say=t=>typewrite(document.getElementById('tw'), t);
   requestAnimationFrame(()=>requestAnimationFrame(()=>avM && avM.classList.add('enter')));
   const close=Math.min(b.eff,b.foe.power)/Math.max(b.eff,b.foe.power,1);
   const left=Math.round(Math.max(12, Math.min(85, 100-close*80)));
+  const shake=id=>{ const el=document.getElementById(id); if(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); } };
+  const myMult=typeMult(me.t, b.foe.t), foeMult=typeMult(b.foe.t, me.t);
+  const eff=m=> m>1 ? ' É super eficaz!' : m<1 ? ' Não é muito eficaz...' : '';
+  /* 1) seu golpe */
   T(1700,()=>{
-    const mt = b.mult>1 ? ' É super eficaz!' : b.mult<1 ? ' Não é muito eficaz...' : '';
-    typewrite(document.getElementById('tw'), `${me.species} e o time atacam com tudo!${mt}`);
-    setBar(document.getElementById('hpF'), b.win?0:left);
-    setBar(document.getElementById('hpM'), b.win?left:0);
-    const hit=document.getElementById(b.win?'avF':'avM'); if(hit) hit.classList.add('shake');
-    try{ SFX.hit(); }catch(e){}
+    say(`${me.species} usou ${TYPE_MOVE[me.t]||'Investida'}!${eff(myMult)}`);
+    setBar(document.getElementById('hpF'), b.win ? Math.max(30,left+10) : Math.min(90,left+25));
+    shake('avF'); try{ SFX.hit(); }catch(e){}
   });
+  /* 2) o contra-ataque */
   T(3300,()=>{
+    say(`${b.foe.leader} contra-ataca com ${TYPE_MOVE[b.foe.t]||'Investida'}!${eff(foeMult)}`);
+    setBar(document.getElementById('hpM'), b.win ? left : Math.max(8,left-30));
+    shake('avM'); try{ SFX.hit(); }catch(e){}
+  });
+  /* 3) o golpe final */
+  T(4900,()=>{
+    say(b.win ? `${me.species} e o time atacam com tudo!` : `${b.foe.leader} não dá chance de reação!`);
+    setBar(document.getElementById(b.win?'hpF':'hpM'), 0);
+    shake(b.win?'avF':'avM'); try{ SFX.hit(); }catch(e){}
+  });
+  T(6300,()=>{
     try{ SFX.faint(); }catch(e){}
     const loser=document.getElementById(b.win?'avF':'avM'); if(loser){ loser.classList.remove('shake'); loser.classList.add('faint'); }
-    typewrite(document.getElementById('tw'), b.win ? `${b.foe.leader} foi derrotad${FEM(b.foe)?'a':'o'}!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
+    say(b.win ? `${b.foe.leader} foi derrotad${FEM(b.foe)?'a':'o'}!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
   });
-  T(4000,()=>{ const bm=document.getElementById('bmenu'); bm.innerHTML = menu(b.win ? btn('battleWin','CONTINUAR','',{primary:true}) : btn('gameover','💀 FIM DA CARREIRA','',{primary:true})); try{ fixPx(bm); }catch(e){} });
+  T(7000,()=>{ const bm=document.getElementById('bmenu'); bm.innerHTML = menu(b.win ? btn('battleWin','CONTINUAR','',{primary:true}) : btn('gameover','💀 FIM DA CARREIRA','',{primary:true})); try{ fixPx(bm); }catch(e){} });
 }
 function applyWin(){
   const b=G.battle, before=snap();
@@ -550,9 +622,9 @@ function winScreen(){
 function eliteScreen(){
   const e=ELITE[G.eliteIndex], champ=G.eliteIndex===ELITE.length-1;
   scene(`<div class="ribbon ${champ?'gold':'info'}">${champ?'🏆 SALA DO CAMPEÃO':'🏛️ PLATÔ ÍNDIGO · ELITE FOUR'}</div>${e4Strip()}
-    ${leaderCard(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`)}
-    ${vsBox(e.power,e.t,'elite')}<div class="dialog" id="tw"></div>
-    ${menu(btn('fight',`⚔️ ENFRENTAR ${e.leader.toUpperCase()}`,'Derrota aqui encerra a carreira',{primary:true}))}${partyHTML()}`, '',
+    ${foeBlock(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`, e.power, e.t, 'elite')}
+    ${partyStrip()}<div class="dialog" id="tw"></div>
+    ${menu(btn('fight',`⚔️ ENFRENTAR ${e.leader.toUpperCase()}`,'Derrota aqui encerra a carreira',{primary:true}))}${partyHTML()}`, 'hubs',
     champ ? (RT.champIntro||'A última porta. Do outro lado, seu antigo Rival, agora Campeão, sorri.\n"Sabia que você viria."') : `${e.leader} te espera. Cinco batalhas seguidas, sem voltar para a estrada.`);
 }
 
@@ -578,7 +650,7 @@ function gameOverScreen(){
     : `Você perdeu para ${G.battle?G.battle.foe.leader:'o desafio'}. ${(RT&&RT.loseLine)||'Em Kanto não existe revanche oficial: a carreira termina aqui.'}`;
   scene(`<div class="over-title">${G.battle&&G.battle.isRed?'O RED VENCEU':'FIM DA CARREIRA'}</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="dialog" id="tw"></div>${trainerCard(false)}${logHTML()}
-    ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
+    ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
     cause+'\nToda lenda também já perdeu. Levante e tente de novo.');
 }
 function hofScreen(){
@@ -588,7 +660,7 @@ function hofScreen(){
   const silverBtn = RT.silver && REGIONS[REGION].RED ? btn('silver','🏔️ SUBIR O MT. SILVER','Opcional: 3 decisões na montanha e o Red no topo',{primary:true}) : '';
   scene(`${conf}<div class="hof-title">HALL DA FAMA</div><div class="ribbon gold">CAMPEÃO DE ${RT.name.toUpperCase()}!</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(silverBtn, btn('restart','🔁 NOVA CARREIRA','',{primary:!silverBtn}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
+    ${menu(silverBtn, btn('restart','🔁 NOVA CARREIRA','',{primary:!silverBtn}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
     RT.hofLine||'Seu Rival estende a mão: "Me enganei sobre você. Kanto tem um novo Campeão."\nSeu time entra para o Hall da Fama!');
 }
 
@@ -648,6 +720,15 @@ function act(id, arg){
       if(nw){ r.diff=diffOf(r.before||new Map()); r.swapNote=`Você deixa ${nw.species} seguir livre, mas a tentativa de captura rendeu experiência: <span class="reward">+5 níveis no time</span>.`; r.highlight=null; logAdd('bad','🍃',`Deixou ${nw.species} (Lv ${nw.lv}) ir e o time ganhou +5 níveis`); }
       break;
     }
+    case 'seeTeam': { const p=document.getElementById('party'); if(p && p.scrollIntoView) p.scrollIntoView({behavior:REDUCE()?'auto':'smooth', block:'start'}); return; }
+    case 'optTheme': case 'optTxt': {
+      OPTS[id==='optTheme'?'theme':'txt']=arg; saveOpts(); applyTheme();
+      try{ document.querySelectorAll(`.seg[data-act="${id}"]`).forEach(b=>{ const on=b.dataset.arg===arg; b.classList.toggle('on',on); b.setAttribute('aria-pressed', on); }); }catch(e){}
+      return;
+    }
+    case 'share': shareCareer(); return;
+    case 'dexF': G.dexF=arg; break;
+    case 'dexSel': dexShow(arg); return;
     default: return;
   }
   if(id!=='release' && id!=='releaseNo' && id!=='releaseYes') G.releaseAsk=null;

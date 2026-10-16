@@ -11,7 +11,7 @@ const ctx={console,Math,JSON,Map,Set,Array,Object,String,Number,
   localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v;},removeItem:k=>{delete store[k];}},
   requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 0;},clearInterval(){},setInterval:()=>0};
 vm.createContext(ctx);
-vm.runInContext(js,ctx); vm.runInContext(fs.readFileSync(path.join(ROOT,'johto.js'),'utf8'),ctx);
+vm.runInContext(js,ctx); vm.runInContext(fs.readFileSync(path.join(ROOT,'kanto_extra.js'),'utf8'),ctx); vm.runInContext(fs.readFileSync(path.join(ROOT,'johto.js'),'utf8'),ctx);
 const R=c=>vm.runInContext(c,ctx);
 let fails=0;const ok=(c,msg)=>{if(!c){fails++;console.log('FALHOU:',msg);}};
 const act=(a,b)=>ctx.act(a,b), mon=(s,l)=>ctx.mon(s,l);

@@ -1,6 +1,9 @@
 @font-face{font-family:'PS2P';src:url(__FONT_PS2P__) format('woff2');font-display:block}
 @font-face{font-family:'VT323';src:url(__FONT_VT323__) format('woff2');font-display:block}
-:root{--red:#E3350D;--red-d:#7A1500;--blue:#2A75BB;--navy:#1B2A5C;--ink:#2B2B2B;--yellow:#FFCB05;--cream:#FFFBEA;--frame:#283A6E;--ok:#3BB54A;--k:#1a1a1a}
+:root{--red:#E3350D;--red-d:#7A1500;--blue:#2A75BB;--navy:#1B2A5C;--ink:#2B2B2B;--yellow:#FFCB05;--cream:#FFFBEA;--frame:#283A6E;--ok:#3BB54A;--k:#1a1a1a;
+  --pri:#E3350D;--pri-d:#5c1000;--pri-h:#ff4a1f;--pri-s:#ffd9cc}
+body[data-region=johto]{--pri:#2F6FD6;--pri-d:#0F2E78;--pri-h:#4583ea;--pri-s:#d6e4ff}
+body[data-region=hoenn]{--pri:#2E9E5B;--pri-d:#0F4D2A;--pri-h:#3cb46c;--pri-s:#d4f5e1}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100%}
 body{background:#0E1530 radial-gradient(circle at 1px 1px,rgba(255,255,255,.07) 1px,transparent 0) 0 0/14px 14px;color:var(--ink);font-family:'VT323',ui-monospace,monospace;font-size:20px;line-height:1.15;display:flex;justify-content:center;padding:18px 8px 40px}
@@ -49,8 +52,8 @@ b{font-weight:normal;color:var(--blue)}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--frame)}
 .btn:focus-visible{outline:3px dashed var(--blue);outline-offset:3px}
 .btn small{display:block;font-family:'VT323';font-size:18px;color:#666;margin-top:4px}
-.btn.primary{background:var(--red);color:#fff;border-color:#5c1000;box-shadow:0 4px 0 #5c1000;text-shadow:1px 1px 0 #5c1000}
-.btn.primary::before{color:#fff}.btn.primary:hover{background:#ff4a1f}.btn.primary small{color:#ffd9cc;text-shadow:none}
+.btn.primary{background:var(--pri);color:#fff;border-color:var(--pri-d);box-shadow:0 4px 0 var(--pri-d);text-shadow:1px 1px 0 var(--pri-d)}
+.btn.primary::before{color:#fff}.btn.primary:hover{background:var(--pri-h)}.btn.primary small{color:var(--pri-s);text-shadow:none}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
 /* ---------- tipos (cores oficiais) ---------- */
@@ -367,3 +370,195 @@ body[data-region=johto] .rg-arrow{color:#2F6FD6}
 .t-dark{background:#705848}.t-steel{background:#B8B8D0;color:#223;text-shadow:none}
 .evobar.fr i{background:linear-gradient(90deg,#ffb3c7,#ff6f91)}
 
+
+/* =====================================================================
+   v3: layout compacto no celular, ícones pixel, opções, Pokédex, Hoenn e MODO ESCURO
+   ===================================================================== */
+/* Hoenn (Gen 3, prévia no lobby): moldura verde-esmeralda */
+body[data-region=hoenn] #app{background:#2E9E5B;box-shadow:0 0 0 4px #0F4D2A,0 16px 40px rgba(0,0,0,.6)}
+body[data-region=hoenn] #dex{border-bottom-color:#0F4D2A}
+body[data-region=hoenn] .dex-title{text-shadow:2px 2px 0 #0F4D2A}
+body[data-region=hoenn] #mute{box-shadow:0 3px 0 #0F4D2A}
+body[data-region=hoenn] .title-sky{background:linear-gradient(#3fb0c9,#a6e3d6 65%,#e2f7ec)}
+body[data-region=hoenn] .rg-arrow{color:#2E9E5B}
+.starters.soon .t-spr{filter:brightness(.95) saturate(.9)}
+body[data-region=hoenn] .title-menu .btn:disabled{opacity:1;border-style:dashed;border-color:#2E9E5B;box-shadow:0 4px 0 #0F4D2A;cursor:default}
+body[data-region=hoenn] .title-menu .btn:disabled small{color:#4a6a55}
+body[data-theme=dark][data-region=hoenn] .title-menu .btn:disabled small{color:#9fd4b4}
+/* Johto: destaques azuis/dourados também dentro da tela, não só na moldura */
+body[data-region=johto] .press{color:#2F6FD6}
+body[data-region=johto] .ribbon.info{background:#2F6FD6}
+body[data-region=johto] .chip b{color:#2F6FD6}
+body[data-region=johto] .t-spr{width:100px;height:100px}
+body[data-region=johto] .starters{gap:10px}
+
+/* ícones de item em pixel art nos botões */
+.ic-px{width:24px;height:24px;image-rendering:pixelated;vertical-align:middle;margin:-8px 6px -6px -4px}
+.ic-dex{display:inline-block;width:13px;height:17px;vertical-align:middle;margin:-4px 8px -2px -1px;background:var(--red);border:2px solid var(--k);border-radius:3px;box-shadow:inset 0 -5px 0 #a51e00,inset 3px 3px 0 #ff8a6a}
+.btn.primary .ic-px{filter:drop-shadow(1px 1px 0 rgba(0,0,0,.35))}
+.prof-img{width:96px;height:96px;image-rendering:pixelated;display:block}
+.prof{align-self:flex-end}
+
+/* topo em UMA linha: insígnias + PODER/TIME/DIA num bloco só */
+#hud{flex-wrap:nowrap;gap:6px}
+.hud-badges{flex:none;min-width:0}
+.hud-chips{flex:none;gap:0;flex-wrap:nowrap;background:#eef8f2;border:3px solid var(--k);border-radius:10px;overflow:hidden}
+.hud-chips .chip{border:0;border-radius:0;min-width:46px;padding:4px 7px;gap:3px;font-size:6px;background:transparent}
+.hud-chips .chip+.chip{border-left:2px dashed #b9c4bd}
+.hud-chips .chip b{font-size:10px}
+@media (max-width:520px){
+  .hb{width:22px;height:22px}.hb img{width:17px;height:17px}.hud-badges{gap:2px;padding:4px 5px}
+  .hud-chips .chip{min-width:40px;padding:4px 5px}
+}
+
+/* hub: líder + barras num bloco, faixa do time, botões secundários lado a lado */
+.foe-card{border:4px solid var(--k);border-radius:12px;overflow:hidden;box-shadow:0 4px 0 var(--k);margin-top:10px}
+.foe-card .leader{margin:0;border:0;border-radius:0;box-shadow:none;padding:6px 10px;grid-template-columns:52px 1fr auto}
+.foe-card .avatar{width:50px;height:50px}.foe-card .avatar .tr-img{width:56px;height:56px;margin-top:4px}
+.foe-card .lc-name{font-size:12px;margin:3px 0 4px}
+.foe-card .lc-badge .bd-img{width:32px;height:32px}
+.foe-card .vsbox{margin:0;border:0;border-radius:0;padding:7px 12px 8px}
+.foe-card .vs-row{margin:3px 0}
+.scene.hubs .pips{margin:10px 0 0}
+.pstrip{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:100%;margin-top:8px;padding:5px;background:linear-gradient(#E9F1FF,#CCDDF8);border:3px solid var(--frame);border-radius:10px;cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.pstrip:focus-visible{outline:3px dashed var(--blue);outline-offset:2px}
+.ps{position:relative;display:flex;flex-direction:column;align-items:center;background:rgba(255,255,255,.75);border-radius:7px;padding:1px 0 3px;min-width:0}
+.ps img{width:100%;max-width:48px;aspect-ratio:1;image-rendering:pixelated}
+.ps .emo{font-size:26px;line-height:44px}
+.ps b{font-family:'PS2P';font-size:6px;color:var(--ink)}
+.ps.lead{background:#ffe1d3}
+.ps.top::after{content:'';position:absolute;top:2px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 1.5px var(--k)}
+.ps.empty{border:2px dashed #9fb3d8;background:transparent;min-height:40px}
+.scene.hubs .dialog{min-height:0;margin:8px 0 4px}
+.menu.split{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.menu.split .btn{min-width:0}
+.menu.split .btn.primary{grid-column:1/-1}
+.menu.split .btn:not(.primary){padding:11px 8px 11px 24px}
+.menu.split .btn:not(.primary)::before{left:7px}
+.menu.split .btn:not(.primary) small{font-size:16px}
+
+/* tela inicial: menos céu vazio e texto legível sobre as nuvens */
+.title-sky{height:318px}
+.title-ball{top:150px}
+.starters{bottom:22px}
+.logo-ed{text-shadow:1px 1px 0 rgba(255,255,255,.85),-1px -1px 0 rgba(255,255,255,.85),1px -1px 0 rgba(255,255,255,.85),-1px 1px 0 rgba(255,255,255,.85)}
+body[data-region=johto] .logo-ed{text-shadow:1px 1px 0 #1B2A5C,-1px -1px 0 #1B2A5C,1px -1px 0 #1B2A5C,-1px 1px 0 #1B2A5C}
+.foot .tch{display:none}
+@media (hover:none) and (pointer:coarse){.foot .kb{display:none}.foot .tch{display:inline}}
+.stars{display:none}
+
+/* opções (tema e texto) */
+.opt-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.opt-row>span{font-family:'PS2P';font-size:7px;color:#777}
+.segs{display:flex;gap:4px;flex-wrap:wrap}
+.seg{font-family:'PS2P';font-size:7px;padding:7px 8px 6px;border:2px solid var(--frame);border-radius:6px;background:#fff;color:var(--frame);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.seg.on{background:var(--frame);color:#fff}
+.seg:focus-visible{outline:3px dashed var(--blue);outline-offset:2px}
+
+/* evento: ícone do evento grande, Pokémon afetado pequeno */
+.spot img.ev-tr{width:120px;height:120px}
+.spot-sub{position:absolute;right:calc(50% - 118px);bottom:4px;width:62px;height:62px;border-radius:50%;background:#fff;border:3px solid var(--frame);display:grid;place-items:center;overflow:hidden;z-index:1}
+.spot-sub img{width:58px!important;height:58px!important;animation:none!important}
+
+/* batalha: sem espaço vazio embaixo */
+.scene.battle{min-height:0}
+
+/* Pokédex: filtros, ficha e grade mais densa no celular */
+.dx-fs{justify-content:center;margin:10px 0 4px}
+.dx-detail{display:grid;grid-template-columns:76px 1fr;gap:8px;align-items:center;background:#fff;border:3px solid var(--frame);border-radius:10px;padding:6px 10px;margin:8px 0;min-height:64px}
+.dx-detail .dx-hint{grid-column:1/-1;font-size:17px;color:#666;line-height:1.1}
+.dxd-img{width:76px;height:76px;image-rendering:pixelated}
+.dxd-h{font-family:'PS2P';font-size:9px;margin-bottom:4px;line-height:1.5}
+.dxd-st{font-family:'PS2P';font-size:6px;color:#888}.dxd-st.got{color:#1f8a2e}
+.dxd-chain{display:flex;align-items:center;gap:2px;margin-top:4px}
+.dxd-chain img{width:34px;height:34px;image-rendering:pixelated;opacity:.75}.dxd-chain img.cur{opacity:1;filter:drop-shadow(0 0 2px var(--yellow))}
+.dxd-chain span{color:#aaa}
+.dxd-br{font-size:16px;color:#666}
+button.dx{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.dx.sel{border-color:var(--pri);box-shadow:0 0 0 2px var(--pri)}
+.dx-empty{grid-column:1/-1;text-align:center;font-size:19px;color:#666;padding:20px 0}
+@media (max-width:440px){
+  .dx-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+  .dx{padding:11px 1px 3px;border-width:2px}.dx img{width:100%;max-width:44px;height:auto;aspect-ratio:1}
+  .dx-nm{font-size:4.5px}.dx-n{font-size:5px;left:3px}
+}
+@media (max-width:400px){
+  .hb{width:19px;height:19px}.hb img{width:15px;height:15px}.hud-badges{gap:2px;padding:3px 5px}
+  .hud-chips .chip{min-width:38px;padding:3px 5px}.hud-chips .chip b{font-size:9px}
+  .title-sky{height:300px}.title-ball{top:144px}
+  .seg{padding:6px 6px 5px;font-size:6px}
+  .ribbon{font-size:8px;padding:8px 10px}
+}
+
+/* aviso flutuante (compartilhar) */
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--k);color:#fff;font-size:19px;padding:10px 16px;border-radius:10px;border:2px solid #fff;transition:opacity .25s,transform .25s;z-index:50;max-width:90vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- MODO ESCURO ---------- */
+body[data-theme=dark]{--ink:#ECE8D8;--cream:#1E2338;--frame:#7D93D6;background-color:#060913}
+body[data-theme=dark] b{color:#8fb8ff}
+body[data-theme=dark] .scene{border-color:#05070f;box-shadow:inset 0 0 0 3px #2b3252}
+body[data-theme=dark] .scene.event.good{background:linear-gradient(#173523,var(--cream) 45%)}
+body[data-theme=dark] .scene.event.bad{background:linear-gradient(#3d1a16,var(--cream) 45%)}
+body[data-theme=dark] .dialog{background:#121731;color:var(--ink);border-color:#4a5b96;box-shadow:inset 0 0 0 2px #121731,inset 0 0 0 5px #33427a,0 3px 0 #05070f}
+body[data-theme=dark] .dialog .reward{color:#7fe08a}body[data-theme=dark] .dialog .bad{color:#ff8a66}
+body[data-theme=dark] .btn{background:#2A3050;color:var(--ink);border-color:#56679f;box-shadow:0 4px 0 #11152a}
+body[data-theme=dark] .btn:hover{background:#343c64}
+body[data-theme=dark] .btn small{color:#a9adc4}
+body[data-theme=dark] .btn.primary{background:var(--pri);border-color:var(--pri-d);box-shadow:0 4px 0 #05070f;color:#fff}
+body[data-theme=dark] .btn.primary:hover{background:var(--pri-h)}
+body[data-theme=dark] .btn.primary small{color:var(--pri-s)}
+body[data-theme=dark] .rec-card,body[data-theme=dark] .how-card,body[data-theme=dark] .scard,body[data-theme=dark] .dx-detail,body[data-theme=dark] .log{background:#2A3050;border-color:#56679f;color:var(--ink)}
+body[data-theme=dark] .log-h{background:#2A3050;color:#a9c0ff}
+body[data-theme=dark] .log-row{border-top-color:#3c4470}
+body[data-theme=dark] .log-row.bad{color:#ff9a80}body[data-theme=dark] .log-row.gym{color:#f2d06b}body[data-theme=dark] .log-row.evo{color:#ffb35c}body[data-theme=dark] .log-row.catch{color:#8fc8ff}
+body[data-theme=dark] .rec-h,body[data-theme=dark] .party-h,body[data-theme=dark] .lc-top,body[data-theme=dark] .opt-row>span{color:#a9c0ff}
+body[data-theme=dark] .rec-empty,body[data-theme=dark] .party-h small,body[data-theme=dark] .evo-lbl,body[data-theme=dark] .m-pow,body[data-theme=dark] .dx-help,body[data-theme=dark] .dx-detail .dx-hint,body[data-theme=dark] .dxd-br,body[data-theme=dark] .dx-empty,body[data-theme=dark] .pips,body[data-theme=dark] .lc-badge small{color:#a9adc4}
+body[data-theme=dark] .scard:hover,body[data-theme=dark] .scard:focus-visible{background:#343c64}
+body[data-theme=dark] .vsb.adv{background:#1d4a2a;color:#9be8a6}body[data-theme=dark] .vsb.dis{background:#5a1e14;color:#ffb8a6}body[data-theme=dark] .vsb.neu{background:#3a3f5c;color:#ccc}
+body[data-theme=dark] .lab{background:linear-gradient(#3a3550,#2a2640);border-color:#05070f}
+body[data-theme=dark] .leader,body[data-theme=dark] .foe-card{background:#2A3050;border-color:#05070f;box-shadow:0 4px 0 #05070f}
+body[data-theme=dark] .foe-card .leader{background:#2A3050}
+body[data-theme=dark] .avatar{background:radial-gradient(circle at 50% 35%,#4a557f,#2a3050);border-color:#05070f}
+body[data-theme=dark] .mon{background:linear-gradient(#2c3560,#232a4c);border-color:#56679f}
+body[data-theme=dark] .mon.lead{background:linear-gradient(#4a2c2a,#3a2220);border-color:#a5462e}
+body[data-theme=dark] .mon.lost{background:#2a2a2a}
+body[data-theme=dark] .pstrip{background:linear-gradient(#2c3560,#232a4c);border-color:#56679f}
+body[data-theme=dark] .ps{background:rgba(255,255,255,.08)}body[data-theme=dark] .ps.lead{background:rgba(255,140,100,.22)}
+body[data-theme=dark] .ps.empty{border-color:#4a5b96;background:transparent}
+body[data-theme=dark] .rel{background:#2A3050}body[data-theme=dark] .rel.yes{background:var(--red)}
+body[data-theme=dark] .rel-ask{color:#ffb8a6}
+body[data-theme=dark] .swap-box{background:#3a2026}body[data-theme=dark] .swap-new{background:#2A3050}
+body[data-theme=dark] .spot::before{background:radial-gradient(circle,rgba(255,255,255,.22) 0 38%,rgba(255,255,255,0) 70%)}
+body[data-theme=dark] .spot-sub{background:#2A3050}
+body[data-theme=dark] .seg{background:#2A3050;color:#c8d4ff;border-color:#56679f}body[data-theme=dark] .seg.on{background:#7D93D6;color:#0b1022}
+body[data-theme=dark] .hud-chips{background:#2A3050;border-color:#05070f}body[data-theme=dark] .hud-chips .chip+.chip{border-left-color:#4a5b96}
+body[data-theme=dark] .chip b{color:#ff8a66}body[data-theme=dark][data-region=johto] .chip b{color:#8fb8ff}
+body[data-theme=dark] .dx{background:#2A3050;border-color:#05070f}
+body[data-theme=dark] .dx.unk{background:#20253d}body[data-theme=dark] .dx.unk img{filter:brightness(0) invert(1);opacity:.12}
+body[data-theme=dark] .dx.seen{background:#262b45}body[data-theme=dark] .dx.got{background:linear-gradient(#323a63,#2A3050)}
+body[data-theme=dark] .dx-bar{background:#3a3f5c;border-color:#05070f}
+body[data-theme=dark] .lg.g{color:#7fe08a}body[data-theme=dark] .lg.r{color:#ff8a66}body[data-theme=dark] .lg.k{color:#ff6a5a}body[data-theme=dark] .lg.n{color:#a9adc4}
+body[data-theme=dark] .reward-line{color:#7fe08a}
+body[data-theme=dark] .hpbox{background:#2A3050;border-color:#05070f}body[data-theme=dark] .hp-num{color:#a9adc4}
+body[data-theme=dark] .scene.battle{background:linear-gradient(#35603a 0 56%,#5e5636 56%)}
+body[data-theme=dark] .plat{background:radial-gradient(#5d7a4a,#3d5a30);border-color:#2c4422}
+body[data-theme=dark] .tcard{color:#2B2B2B}body[data-theme=dark] .tcard b{color:var(--red-d)}
+body[data-theme=dark] .e4{background:#2A3050;border-color:#05070f}body[data-theme=dark] .e4.now{background:#7a6510}
+body[data-theme=dark] .hof-slot{background:#2A3050;border-color:#05070f}
+body[data-theme=dark] .scene.hof{background:radial-gradient(circle at 50% 12%,#5a4a14,#3a300c 55%,#221c06)}
+body[data-theme=dark] .ribbon.gold{color:#3a2a00}
+body[data-theme=dark] .foot{color:#6c7290}
+body[data-theme=dark] .title-sky{background:linear-gradient(#060b24,#16245a 60%,#2b3f80)}
+body[data-theme=dark][data-region=johto] .title-sky{background:linear-gradient(#05081c,#121a48 60%,#23306e)}
+body[data-theme=dark][data-region=hoenn] .title-sky{background:linear-gradient(#041718,#0f3a44 60%,#1d5a5a)}
+body[data-theme=dark] .cloud{opacity:.18}
+body[data-theme=dark] .grass{background:repeating-linear-gradient(90deg,#2f6b28 0 12px,#285c22 12px 24px);border-top-color:#1d4418}
+body[data-theme=dark] .logo-ed{color:#ffe9a8;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+body[data-theme=dark] .stars{display:block;position:absolute;inset:0;background-image:radial-gradient(1.5px 1.5px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 28% 42%,#fff,transparent),radial-gradient(1.5px 1.5px at 46% 10%,#fff,transparent),radial-gradient(1px 1px at 64% 32%,#fff,transparent),radial-gradient(1.5px 1.5px at 82% 14%,#fff,transparent),radial-gradient(1px 1px at 90% 48%,#fff,transparent),radial-gradient(1px 1px at 8% 56%,#fff,transparent),radial-gradient(1px 1px at 72% 60%,#fff,transparent);animation:twinkle 3s ease-in-out infinite}
+@keyframes twinkle{50%{opacity:.55}}
+body[data-theme=dark] .rg-name{background:rgba(0,0,0,.45)}
+body[data-theme=dark] .how-card h4{color:#ff8a66}
+body[data-theme=dark] .m-lv,body[data-theme=dark] .m-name{color:var(--ink)}
+body[data-theme=dark] .d-up{color:#7fe08a}body[data-theme=dark] .d-dn{color:#ff8a66}
+@media (prefers-reduced-motion:reduce){.stars{animation:none}}

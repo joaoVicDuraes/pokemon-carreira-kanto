@@ -32,10 +32,13 @@ body{width:1200px;height:630px;background:#E3350D;padding:26px}
 <div class="m"><img src="%s"><img class="p" src="%s"><img src="%s"><img src="%s"></div><div class="tag">EDIÇÃO KANTO · GEN 1</div></div></body></html>""" % (
     CSS, badges, mon(3), mon(25), mon(6), mon(9))
 
-ICON = """<html><head><style>%s
-body{width:180px;height:180px;background:radial-gradient(circle at 50%% 40%%,#ff6a3d,#E3350D 70%%);display:grid;place-items:center}
-.b{position:absolute;width:150px;height:150px;border-radius:50%%;background:linear-gradient(rgba(255,255,255,.18) 0 46%%,rgba(0,0,0,.25) 46%% 54%%,rgba(255,255,255,.12) 54%%)}
-img{position:relative;width:150px;height:150px}</style></head><body><div class="b"></div><img src="%s"></body></html>""" % (CSS, mon(25))
+ICON_T = """<html><head><style>%s
+body{width:%dpx;height:%dpx;background:radial-gradient(circle at 50%% 40%%,#ff6a3d,#E3350D 70%%);display:grid;place-items:center;position:relative;overflow:hidden}
+.b{position:absolute;width:83%%;height:83%%;border-radius:50%%;background:linear-gradient(rgba(255,255,255,.18) 0 46%%,rgba(0,0,0,.25) 46%% 54%%,rgba(255,255,255,.12) 54%%)}
+img{position:relative;width:%s;height:%s}</style></head><body><div class="b"></div><img src="%s"></body></html>"""
+def icon(size, sprite_pct):
+    return ICON_T % (CSS, size, size, sprite_pct, sprite_pct, mon(25))
+ICON = icon(180, "150px")
 
 def shot(html, w, h, out):
     d = tempfile.mkdtemp()
@@ -48,3 +51,6 @@ def shot(html, w, h, out):
 
 shot(OG, 1200, 630, os.path.join(ROOT, "og.png"))
 shot(ICON, 180, 180, os.path.join(ROOT, "apple-touch-icon.png"))
+# ícones do app instalado (manifest.webmanifest). O de 512 também serve de "maskable": o Pikachu fica na zona segura central.
+shot(icon(192, "160px"), 192, 192, os.path.join(ROOT, "icon-192.png"))
+shot(icon(512, "360px"), 512, 512, os.path.join(ROOT, "icon-512.png"))

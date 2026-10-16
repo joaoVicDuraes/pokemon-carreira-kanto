@@ -1,5 +1,18 @@
 /* =====================================================================
-   REGIÕES: um motor, vários pacotes de dados (Kanto embutido, Johto a seguir)
+   REGIÕES: um motor, vários pacotes de dados.
+   Kanto vem embutido no index.html; as outras regiões são pacotes <id>.js baixados quando o
+   jogador escolhe a região no lobby.
+
+   COMO ADICIONAR UMA REGIÃO (ex.: Hoenn / Gen 3):
+     1. src/<id>_data.js   -> DEX, BRANCH, STONE, STARTERS, TYPE_CHART, GYMS, ELITE e
+                              REGIONS.<id> = Object.assign(REGIONS.<id>, {ready:true, ...})
+        src/<id>_events.js -> roletas por ginásio (mesmo formato de johto_events.js)
+     2. sprites: src/sprites/trainers_<id>/ e src/sprites/badges_<id>/ (1..8.png).
+        Os Pokémon 252-386 já existem na mesma pasta firered-leafgreen do PokeAPI.
+     3. assemble.py: uma chamada build_pack("<id>", range(...), ...) gera o <id>.js.
+     4. Aqui: tire o `soon:true`, ponha o arquivo em PACK_FILE e as cores no CSS
+        (body[data-region=<id>]).
+   O save, os recordes e a Pokédex já ficam separados por região (chaves *_KEY).
    ===================================================================== */
 function snapRegion(){
   return {BADGES, DEX_LIST, DEX, BRANCH, STONE, STARTERS, WILD_POOL, TYPE_CHART, GYMS, ELITE,
@@ -13,15 +26,21 @@ function applyRegion(r){
 let RT = null;
 const REGIONS = {
   kanto: Object.assign(snapRegion(), {id:"kanto", ready:true, theme:"kanto", RT:{
-    name:"Kanto", edition:"EDIÇÃO KANTO · GEN 1", home:"Pallet Town", prof:"Prof. Carvalho", profIc:"👴",
-    trainerPrefix:"", league:"Platô Índigo", rivalChamp:"blue",
+    name:"Kanto", edition:"EDIÇÃO KANTO · GEN 1", home:"Pallet Town", prof:"Prof. Carvalho", profIc:"👴", profKey:"oak",
+    trainerPrefix:"", league:"Platô Índigo", rivalChamp:"blue", starters:["Bulbasaur","Charmander","Squirtle"],
   }}),
   johto: {id:"johto", ready:false, theme:"johto", RT:{
-    name:"Johto", edition:"EDIÇÃO JOHTO · GEN 2", home:"New Bark Town", prof:"Prof. Elm", profIc:"🧑‍🔬",
-    trainerPrefix:"j_", league:"Platô Índigo", rivalChamp:"lance",
+    name:"Johto", edition:"EDIÇÃO JOHTO · GEN 2", home:"New Bark Town", prof:"Prof. Elm", profIc:"🧑‍🔬", profKey:"j_elm",
+    trainerPrefix:"j_", league:"Platô Índigo", rivalChamp:"lance", starters:["Chikorita","Cyndaquil","Totodile"], dexTotal:251,
+  }},
+  /* Gen 3: aparece no lobby como prévia, sem pacote ainda */
+  hoenn: {id:"hoenn", ready:false, soon:true, theme:"hoenn", RT:{
+    name:"Hoenn", edition:"EDIÇÃO HOENN · GEN 3", home:"Littleroot Town", prof:"Prof. Birch", profIc:"🧑‍🔬", profKey:"h_birch",
+    trainerPrefix:"h_", league:"Ever Grande", rivalChamp:"steven", starters:["Treecko","Torchic","Mudkip"], dexTotal:386,
+    soonText:"A Gen 3 chega numa próxima atualização. Treecko, Torchic e Mudkip já estão te esperando.",
   }},
 };
-const REGION_ORDER = ["kanto","johto"];
+const REGION_ORDER = ["kanto","johto","hoenn"];
 let REGION = "kanto";
 let LOBBY = (()=>{ try{ const r=localStorage.getItem("kc_region"); return REGIONS[r] ? r : "kanto"; }catch(e){ return "kanto"; } })();
 function useRegion(id){
@@ -31,15 +50,18 @@ function useRegion(id){
   DEXREC=loadDexRec();
   return true;
 }
-/* pacotes de região carregados sob demanda (johto.js ao lado do index.html) */
+/* pacotes carregados sob demanda (arquivos ao lado do index.html) */
 const PACK_FILE = {johto:"johto.js"};
-function loadPack(id, cb){
-  const r=REGIONS[id]; if(!r || r.ready || r.loading || !PACK_FILE[id] || typeof document.createElement!=="function") return;
-  r.loading=true; r.failed=false;
-  const s=document.createElement("script"); s.src=PACK_FILE[id]+"?v="+(window.BUILD_ID||"");
-  s.onload=()=>{ r.loading=false; cb&&cb(); };
-  s.onerror=()=>{ r.loading=false; r.failed=true; cb&&cb(); };
+function loadScript(src, ok, fail){
+  if(typeof document.createElement!=="function") return;
+  const s=document.createElement("script"); s.src=src+"?v="+(window.BUILD_ID||"");
+  s.onload=()=>ok&&ok(); s.onerror=()=>fail&&fail();
   document.head.appendChild(s);
+}
+function loadPack(id, cb){
+  const r=REGIONS[id]; if(!r || r.ready || r.loading || !PACK_FILE[id]) return;
+  r.loading=true; r.failed=false;
+  loadScript(PACK_FILE[id], ()=>{ r.loading=false; cb&&cb(); }, ()=>{ r.loading=false; r.failed=true; cb&&cb(); });
 }
 function afterPack(){
   if(REGIONS[LOBBY].ready && G && G.phase==="title"){ useRegion(LOBBY); setTheme(LOBBY); }
@@ -48,6 +70,7 @@ function afterPack(){
 function setTheme(id){
   try{ document.body.dataset.region = REGIONS[id].theme; }catch(e){}
   try{ const t=document.querySelector(".dex-title"); if(t) t.innerHTML="CARREIRA<br>"+REGIONS[id].RT.name.toUpperCase(); }catch(e){}
+  try{ applyTheme(); }catch(e){}
 }
 function lobbyGo(dir){
   const i=REGION_ORDER.indexOf(LOBBY), n=REGION_ORDER.length;
@@ -69,5 +92,12 @@ function lobbyGo(dir){
 
 /* ---------- boot ---------- */
 useRegion("kanto"); setTheme(LOBBY);
-if(!REGIONS[LOBBY].ready && typeof document.createElement==="function") loadPack(LOBBY, afterPack);
+if(!REGIONS[LOBBY].ready) loadPack(LOBBY, afterPack);
+/* sprites de costas e shiny de Kanto: baixam logo depois da abertura (a 1ª tela não precisa deles) */
+loadScript("kanto_extra.js");
+/* funciona offline e como app na tela de início (só em http/https; abrir o arquivo direto não usa) */
+try{
+  if(typeof navigator!=="undefined" && "serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname))
+    window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}catch(e){}
 G=newGame(); render();

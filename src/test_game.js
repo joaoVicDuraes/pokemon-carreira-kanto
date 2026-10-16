@@ -6,7 +6,7 @@ js=js.replace(/G=newGame\(\); render\(\);\s*$/,'')+'\nthis.__x={get G(){return G
 function el(){return {className:'',innerHTML:'',style:{},dataset:{},classList:{add(){},remove(){}},appendChild(){},setAttribute(){},isConnected:false,querySelector:()=>el(),querySelectorAll:()=>[]};}
 const store={};
 const ctx={console,Math,JSON,Map,Set,Array,Object,String,Number,
-  document:{getElementById:()=>el(),addEventListener(){},body:{},createTreeWalker:()=>({nextNode:()=>null})},
+  document:{getElementById:()=>el(),addEventListener(){},body:{},querySelector:()=>null,querySelectorAll:()=>[],createTreeWalker:()=>({nextNode:()=>null})},
   NodeFilter:{SHOW_TEXT:4},window:{matchMedia:()=>({matches:true}),scrollTo(){}},
   localStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>{store[k]=v;},removeItem:k=>{delete store[k];}},
   requestAnimationFrame:f=>f(),setTimeout:f=>{f();return 0;},clearInterval(){},setInterval:()=>0};
@@ -122,6 +122,24 @@ for(const pol of Object.keys(POL)){
   }catch(e){err++;if(err<3)console.log('ERRO carreira',e.message);}}
   ok(err===0,'erros em carreiras: '+err);
   console.log(pol.padEnd(8),'| chegou na Liga',(liga/N*100).toFixed(1)+'%','| campeão',(champ/N*100).toFixed(1)+'%','| espécies vistas',seen.size,'/ 151');
+}
+// 9) v3: opções, Hoenn em breve, filtros da Pokédex, ícone do evento, falas da batalha
+{const R=c=>vm.runInContext(c,ctx);
+ X.G=ctx.newGame(); act('optTheme','dark'); ok(JSON.parse(store.kc_opts).theme==='dark','opção de tema salva');
+ act('optTxt','instant'); ok(JSON.parse(store.kc_opts).txt==='instant','opção de texto salva');
+ act('optTxt','normal'); act('optTheme','auto');
+ ok(R('REGION_ORDER').includes('hoenn') && R('REGIONS.hoenn.soon') && !R('REGIONS.hoenn.ready'),'Hoenn no lobby como "em breve"');
+ R('LOBBY="hoenn"'); X.G=ctx.newGame(); act('new'); ok(X.G.phase==='title','Hoenn ainda não pode ser jogado'); R('LOBBY="kanto"');
+ X.G=ctx.newGame(); act('dex'); act('dexF','got'); ok(X.G.phase==='dex' && X.G.dexF==='got','filtro da Pokédex');
+ act('dexSel','Pikachu'); ok(X.G.phase==='dex','ficha da Pokédex não troca de tela');
+ ok(typeof R('ITEMS')['coin-case']==='string' && R('TRAINERS.oak'),'ícones de item e sprite do Prof. Carvalho embutidos');
+ // o evento guarda qual fatia saiu (para mostrar o ícone certo)
+ X.G=ctx.newGame(); ctx.clearSave(); act('new'); act('choose','Charmander'); act('roll');
+ ok(X.G.phase==='event' && X.G.lastResult.lb,'resultado da roleta guarda o evento');
+ // batalha: falas de golpe por tipo
+ const said=[]; ctx.__said=said; R('typewrite=(el,h)=>this.__said.push(h)');
+ X.G.step=3; act('back'); act('challenge');
+ ok(said.some(s=>/usou /.test(s)) && said.some(s=>/contra-ataca/.test(s)),'falas de golpe na batalha: '+said.slice(0,4).join(' | '));
 }
 console.log(fails?`${fails} FALHA(S)`:'TUDO OK');
 process.exit(fails?1:0);

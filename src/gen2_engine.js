@@ -48,10 +48,10 @@ function hubSilver(){
   const tw = can ? "O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada."
                  : `Mt. Silver: a montanha mais perigosa do mundo. Faltam ${STEPS_PER_GYM-G.step} decisões até o topo.`;
   scene(`<div class="ribbon plate"><span class="spk">✦</span>🏔️ MT. SILVER<span class="spk">✦</span></div>
-    ${leaderCard(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>")}
-    ${vsBox(R.power,R.t,"elite")}${pips()}<div class="dialog" id="tw"></div>
+    ${foeBlock(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>", R.power, R.t, "elite")}
+    ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn("fightRed","⚔️ ENFRENTAR O RED","Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
-    ${partyHTML(null,{manage:true})}`, "", tw);
+    ${partyHTML(null,{manage:true})}`, "hubs", tw);
 }
 function challengeRed(){
   const foe=REGIONS[REGION].RED, mult=bestMatchup(foe.t), mine=teamPower(), eff=Math.round(mine*mult);
@@ -64,6 +64,6 @@ function legendScreen(){
   const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
   scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU O RED!</div>
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
+    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
     '...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!');
 }

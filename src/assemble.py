@@ -133,14 +133,19 @@ dex_names = [r[1] for r in TABLE]
 def uri(path):
     return "data:image/png;base64," + base64.b64encode(open(path, "rb").read()).decode("ascii") if os.path.exists(path) else None
 sets = {"SPRITES": SPR, "SHINY": os.path.join(SPR, "shiny"), "BACKS": os.path.join(SPR, "back"), "SHINY_BACKS": os.path.join(SPR, "back", "shiny")}
-sprite_js = ""
+# só a frente vai no index.html; costas e shiny de Kanto vão no kanto_extra.js (baixado logo depois da abertura)
+sprite_js, extra_js = "", '/* gerado por assemble.py — sprites de costas e shiny de Kanto */\n"use strict";\n'
 for var, folder in sets.items():
     d = {}
     for n in dex_names:
         u = uri(os.path.join(folder, "%04d.png" % DEX_NUM[n]))
         if u: d[n] = u
     print(var, len(d), "/", len(dex_names))
-    sprite_js += "const %s = %s;\n" % (var, json.dumps(d, separators=(",", ":")))
+    if var == "SPRITES":
+        sprite_js += "const %s = %s;\n" % (var, json.dumps(d, separators=(",", ":")))
+    else:
+        sprite_js += "const %s = {};\n" % var
+        extra_js += "Object.assign(%s, %s);\n" % (var, json.dumps(d, separators=(",", ":")))
 
 # ---------- líderes/treinadores (FRLG) e insígnias de Kanto ----------
 def folder_uris(folder):
@@ -148,10 +153,14 @@ def folder_uris(folder):
     return {os.path.splitext(f)[0]: uri(os.path.join(p, f)) for f in sorted(os.listdir(p)) if f.endswith(".png")}
 TR, BD = folder_uris("trainers"), folder_uris("badges")
 assert len(BD) == 8, "faltam insígnias"
-for k in ["brock","misty","ltsurge","erika","koga","sabrina","blaine","giovanni","lorelei","bruno","agatha","lance","blue"]:
+for k in ["brock","misty","ltsurge","erika","koga","sabrina","blaine","giovanni","lorelei","bruno","agatha","lance","blue","oak"]:
     assert k in TR, "falta sprite do treinador " + k
 print("TRAINERS", len(TR), "BADGES", len(BD))
 sprite_js += "const TRAINERS = %s;\nconst BADGES = %s;\n" % (json.dumps(TR, separators=(",", ":")), json.dumps([BD[str(i)] for i in range(1, 9)], separators=(",", ":")))
+ITEMS = folder_uris("items")
+for k in ["coin-case", "protein", "poke-ball", "town-map", "teachy-tv", "bicycle"]:
+    assert k in ITEMS, "falta ícone de item " + k
+sprite_js += "const ITEMS = %s;\n" % json.dumps(ITEMS, separators=(",", ":"))
 
 # ---------- fontes + CSS + UI ----------
 fonts = json.loads(rd(os.path.join(BASE, "fonts.json")))
@@ -162,11 +171,22 @@ polish = rd(os.path.join(BASE, "polish.js"))
 region = rd(os.path.join(BASE, "region.js"))
 gen2 = rd(os.path.join(BASE, "gen2_engine.js"))
 import hashlib
-BUILD = hashlib.sha1((rd(os.path.join(BASE, "johto_data.js")) + rd(os.path.join(BASE, "johto_events.js"))).encode("utf-8")).hexdigest()[:8]
+# versão do build: muda sempre que qualquer fonte muda (usada no ?v= dos pacotes e no cache offline)
+_h = hashlib.sha1()
+for f in sorted(os.listdir(BASE)):
+    if f.endswith((".js", ".css", ".py", ".html")) and not f.startswith(("_", "test_")):
+        _h.update(open(os.path.join(BASE, f), "rb").read())
+for sub in ["items", "trainers", "trainers_johto", "hoenn_preview"]:
+    _h.update(",".join(sorted(os.listdir(os.path.join(BASE, "sprites", sub)))).encode())
+BUILD = _h.hexdigest()[:8]
 region = "window.BUILD_ID=%s;\n" % json.dumps(BUILD) + region
 sprite_js += "const DEX_LIST = %s;\n" % json.dumps([[DEX_NUM[n], n] for n in dex_names], ensure_ascii=False, separators=(",", ":"))
 # prévia do lobby para regiões cujo pacote ainda não foi carregado (só os iniciais)
-sprite_js += "const LOBBY_PREVIEW = %s;\n" % json.dumps({"johto": [uri(os.path.join(SPR, "%04d.png" % n)) for n in (152, 155, 158)]}, separators=(",", ":"))
+HP = os.path.join(BASE, "sprites", "hoenn_preview")
+sprite_js += "const LOBBY_PREVIEW = %s;\n" % json.dumps({
+    "johto": [uri(os.path.join(SPR, "%04d.png" % n)) for n in (152, 155, 158)],
+    "hoenn": [uri(os.path.join(HP, "%04d.png" % n)) for n in (252, 255, 258)]}, separators=(",", ":"))
+assert "null" not in sprite_js[sprite_js.index("const LOBBY_PREVIEW"):], "falta sprite da prévia do lobby"
 
 # dados que mudam por região viram `let` (região ativa = useRegion troca os valores)
 REGION_VARS = ["BADGES", "DEX_LIST", "DEX", "BRANCH", "STONE", "STARTERS", "WILD_POOL", "TYPE_CHART", "GYMS", "ELITE",
@@ -177,8 +197,8 @@ def letify(src, names):
     return src
 
 SITE = "https://pokemon-carreira-kanto.vercel.app/"
-DESC = ("Uma carreira de treinador Pokémon em Kanto: 8 ginásios, Elite Four, roleta de eventos, "
-        "151 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?")
+DESC = ("Uma carreira de treinador Pokémon em Kanto e Johto: 8 ginásios, Elite Four, roleta de eventos, "
+        "251 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?")
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
            "%3Ccircle cx='16' cy='16' r='14' fill='%23fff' stroke='%23111' stroke-width='3'/%3E"
            "%3Cpath d='M2 16a14 14 0 0 1 28 0z' fill='%23e3350d' stroke='%23111' stroke-width='3'/%3E"
@@ -189,9 +209,10 @@ head = ('<meta name="description" content="%(d)s">\n'
         '<meta name="mobile-web-app-capable" content="yes">\n'
         '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
         '<meta name="apple-mobile-web-app-title" content="Carreira Kanto">\n'
+        '<link rel="manifest" href="manifest.webmanifest">\n'
         '<link rel="icon" href="%(fav)s">\n<link rel="apple-touch-icon" href="%(s)sapple-touch-icon.png">\n'
         '<meta property="og:type" content="website">\n<meta property="og:url" content="%(s)s">\n'
-        '<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto">\n'
+        '<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto e Johto">\n'
         '<meta property="og:description" content="%(d)s">\n'
         '<meta property="og:image" content="%(s)sog.png">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         '<meta property="og:locale" content="pt_BR">\n'
@@ -200,7 +221,7 @@ head = ('<meta name="description" content="%(d)s">\n'
 
 html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n'
-        '<title>Pokémon Carreira de Treinador — Kanto</title>\n' + head + '<style>\n' + css + '\n</style>\n</head>\n<body>\n'
+        '<title>Pokémon Carreira de Treinador — Kanto e Johto</title>\n' + head + '<style>\n' + css + '\n</style>\n</head>\n<body>\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
         '<button id="mute" data-act="mute" aria-label="Desligar som">🔊</button>'
         '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main><div id="dexfoot"><b class="b"></b><b class="r"></b><b class="y"></b><b class="g"></b></div></div>\n'
@@ -210,34 +231,70 @@ for nm in REGION_VARS:
 io.open(OUT, "w", encoding="utf-8").write(html)
 print("wrote", OUT, len(html), "chars")
 
-# ---------- pacote Johto (johto.js, carregado sob demanda) ----------
-G2 = range(152, 252)
-jparts = []
-for var, folder in sets.items():
-    d = {}
-    for n in G2:
-        u = uri(os.path.join(folder, "%04d.png" % n))
-        if u: d["#%d" % n] = u
-    assert len(d) == 100, "%s: só %d sprites da Gen 2" % (var, len(d))
-    jparts.append("J_SPR.%s=%s;" % (var, json.dumps(d, separators=(",", ":"))))
-JTR = {"j_" + k: v for k, v in folder_uris("trainers_johto").items()}
-for k in ["falkner","bugsy","whitney","morty","chuck","jasmine","pryce","clair","will","koga","bruno","karen","lance","silver","red"]:
-    assert "j_" + k in JTR, "falta treinador de Johto " + k
-JBD = folder_uris("badges_johto"); assert len(JBD) == 8
+# ---------- pacotes de região (johto.js, e no futuro hoenn.js), carregados sob demanda ----------
+def build_pack(rid, P, nums, trainers, badges, data_file, events_file, need_trainers, head_extra=""):
+    """Gera <rid>.js: sprites dos Pokémon `nums` (frente/costas/shiny), treinadores com prefixo
+    "<p>_", insígnias em <P>BADGES, e os dados + eventos da região. P = prefixo das variáveis (ex. "J_")."""
+    parts = []
+    for var, folder in sets.items():
+        d = {}
+        for n in nums:
+            u = uri(os.path.join(folder, "%04d.png" % n))
+            if u: d["#%d" % n] = u
+        assert len(d) == len(nums), "%s %s: só %d de %d sprites" % (rid, var, len(d), len(nums))
+        parts.append("%sSPR.%s=%s;" % (P, var, json.dumps(d, separators=(",", ":"))))
+    p = P[0].lower() + "_"
+    TRS = {p + k: v for k, v in folder_uris(trainers).items()}
+    for k in need_trainers:
+        assert p + k in TRS, "falta treinador de %s: %s" % (rid, k)
+    BDS = folder_uris(badges); assert len(BDS) == 8, "faltam insígnias de " + rid
+    data = rd(os.path.join(BASE, data_file))
+    names = re.findall(r'\[(\d{3}),"([^"]+)"', data)
+    assert len(names) == len(nums), (rid, len(names))
+    num = 'const %sNUM2NAME = {%s};\n' % (P, ",".join('"#%s":%s' % (n, json.dumps(nm, ensure_ascii=False)) for n, nm in names))
+    head = ('/* gerado por assemble.py — não editar à mão */\n(function(){ const %sSPR={};\n' % P + "\n".join(parts) + "\n" +
+            'for(const set of ["SPRITES","SHINY","BACKS","SHINY_BACKS"]){ const tgt={SPRITES,SHINY,BACKS,SHINY_BACKS}[set]; for(const k in %sSPR[set]){ tgt[%sNUM2NAME[k]]=%sSPR[set][k]; } }\n' % (P, P, P) +
+            head_extra + ' })();\n' +
+            'Object.assign(TRAINERS, %s);\n' % json.dumps(TRS, separators=(",", ":")) +
+            'const %sBADGES = %s;\n' % (P, json.dumps([BDS[str(i)] for i in range(1, 9)], separators=(",", ":"))))
+    out = '"use strict";\n' + num + head + rd(os.path.join(BASE, events_file)) + "\n" + data
+    path = os.path.join(os.path.dirname(BASE), rid + ".js")
+    io.open(path, "w", encoding="utf-8").write(out)
+    print("wrote", path, len(out), "chars")
+
 EGG = ("data:image/svg+xml," + "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E"
        "%3Cpath d='M6 2h4v1h1v1h1v2h1v4h-1v2h-1v1h-1v1H6v-1H5v-1H4v-2H3V6h1V4h1V3h1z' fill='%23111'/%3E"
        "%3Cpath d='M6 3h4v1h1v2h1v4h-1v2h-1v1H6v-1H5v-2H4V6h1V4h1z' fill='%23fff8e0'/%3E"
        "%3Cpath d='M7 5h2v1H7zM5 8h2v2H5zM9 9h2v2H9z' fill='%2378c850'/%3E%3C/svg%3E")
-jhead = ('/* gerado por assemble.py — não editar à mão */\n(function(){ const J_SPR={};\n' + "\n".join(jparts) + "\n" +
-         'for(const set of ["SPRITES","SHINY","BACKS","SHINY_BACKS"]){ const tgt={SPRITES,SHINY,BACKS,SHINY_BACKS}[set]; for(const k in J_SPR[set]){ tgt[J_NUM2NAME[k]]=J_SPR[set][k]; } }\n'
-         'SPRITES["Ovo"]=%s; })();\n' % json.dumps(EGG) +
-         'Object.assign(TRAINERS, %s);\n' % json.dumps(JTR, separators=(",", ":")) +
-         'const J_BADGES = %s;\n' % json.dumps([JBD[str(i)] for i in range(1, 9)], separators=(",", ":")))
-jdata = rd(os.path.join(BASE, "johto_data.js"))
-names2 = re.findall(r'\[(\d{3}),"([^"]+)"', jdata)
-assert len(names2) == 100, len(names2)
-jnum = 'const J_NUM2NAME = {%s};\n' % ",".join('"#%s":%s' % (n, json.dumps(nm, ensure_ascii=False)) for n, nm in names2)
-johto = '"use strict";\n' + jnum + jhead + rd(os.path.join(BASE, "johto_events.js")) + "\n" + jdata
-JOUT = os.path.join(os.path.dirname(BASE), "johto.js")
-io.open(JOUT, "w", encoding="utf-8").write(johto)
-print("wrote", JOUT, len(johto), "chars")
+build_pack("johto", "J_", range(152, 252), "trainers_johto", "badges_johto", "johto_data.js", "johto_events.js",
+           ["falkner","bugsy","whitney","morty","chuck","jasmine","pryce","clair","will","koga","bruno","karen","lance","silver","red","elm"],
+           head_extra='SPRITES["Ovo"]=%s;' % json.dumps(EGG))
+# Gen 3 (quando existir): build_pack("hoenn", "H_", range(252, 387), "trainers_hoenn", "badges_hoenn", "hoenn_data.js", "hoenn_events.js", [...])
+
+ROOT = os.path.dirname(BASE)
+io.open(os.path.join(ROOT, "kanto_extra.js"), "w", encoding="utf-8").write(extra_js)
+print("wrote kanto_extra.js", len(extra_js), "chars")
+
+# ---------- PWA: instala na tela de início e funciona offline ----------
+manifest = {
+    "name": "Pokémon Carreira de Treinador", "short_name": "Carreira Pokémon", "lang": "pt-BR",
+    "description": DESC, "start_url": "./", "scope": "./", "display": "standalone", "orientation": "portrait",
+    "background_color": "#0E1530", "theme_color": "#E3350D",
+    "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+              {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+              {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}],
+}
+io.open(os.path.join(ROOT, "manifest.webmanifest"), "w", encoding="utf-8").write(json.dumps(manifest, ensure_ascii=False, indent=1))
+SW = """/* gerado por assemble.py — cache offline. Rede primeiro (deploy novo aparece na hora), cache se estiver sem internet. */
+const V=%s, CACHE="kc-"+V;
+const CORE=["./","./kanto_extra.js?v="+V,"./johto.js?v="+V,"./manifest.webmanifest","./icon-192.png","./apple-touch-icon.png"];
+self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{}))))); });
+self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
+self.addEventListener("fetch",e=>{
+  const r=e.request; if(r.method!=="GET" || new URL(r.url).origin!==location.origin) return;
+  e.respondWith(fetch(r).then(res=>{ if(res && res.ok){ const cp=res.clone(); caches.open(CACHE).then(c=>c.put(r,cp)); } return res; })
+    .catch(()=>caches.match(r,{ignoreSearch:false}).then(m=>m || (r.mode==="navigate" ? caches.match("./") : Response.error()))));
+});
+""" % json.dumps(BUILD)
+io.open(os.path.join(ROOT, "sw.js"), "w", encoding="utf-8").write(SW)
+print("wrote sw.js / manifest | build", BUILD)

@@ -2,7 +2,7 @@
  "name": "Pokémon Carreira de Treinador",
  "short_name": "Carreira Pokémon",
  "lang": "pt-BR",
- "description": "Uma carreira de treinador Pokémon em Kanto e Johto: 8 ginásios, Elite Four, roleta de eventos, 251 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?",
+ "description": "Uma carreira de treinador Pokémon em Kanto, Johto e Hoenn: 8 ginásios, Elite Four, roleta de eventos, 386 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",

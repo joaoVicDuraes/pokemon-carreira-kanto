@@ -201,8 +201,8 @@ def letify(src, names):
     return src
 
 SITE = "https://pokemon-carreira-kanto.vercel.app/"
-DESC = ("Uma carreira de treinador Pokémon em Kanto e Johto: 8 ginásios, Elite Four, roleta de eventos, "
-        "251 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?")
+DESC = ("Uma carreira de treinador Pokémon em Kanto, Johto e Hoenn: 8 ginásios, Elite Four, roleta de eventos, "
+        "386 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?")
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
            "%3Ccircle cx='16' cy='16' r='14' fill='%23fff' stroke='%23111' stroke-width='3'/%3E"
            "%3Cpath d='M2 16a14 14 0 0 1 28 0z' fill='%23e3350d' stroke='%23111' stroke-width='3'/%3E"

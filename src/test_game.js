@@ -128,7 +128,7 @@ for(const pol of Object.keys(POL)){
  X.G=ctx.newGame(); act('optTheme','dark'); ok(JSON.parse(store.kc_opts).theme==='dark','opção de tema salva');
  act('optTxt','instant'); ok(JSON.parse(store.kc_opts).txt==='instant','opção de texto salva');
  act('optTxt','normal'); act('optTheme','auto');
- ok(R('REGION_ORDER').includes('hoenn') && R('REGIONS.hoenn.soon') && !R('REGIONS.hoenn.ready'),'Hoenn no lobby como "em breve"');
+ ok(R('REGION_ORDER').includes('hoenn') && !R('REGIONS.hoenn.soon') && R('PACK_FILE.hoenn')==='hoenn.js' && R('PACK_DEPS.hoenn').includes('johto'),'Hoenn no lobby, carregado sob demanda depois de Johto');
  R('LOBBY="hoenn"'); X.G=ctx.newGame(); act('new'); ok(X.G.phase==='title','Hoenn ainda não pode ser jogado'); R('LOBBY="kanto"');
  X.G=ctx.newGame(); act('dex'); act('dexF','got'); ok(X.G.phase==='dex' && X.G.dexF==='got','filtro da Pokédex');
  act('dexSel','Pikachu'); ok(X.G.phase==='dex','ficha da Pokédex não troca de tela');

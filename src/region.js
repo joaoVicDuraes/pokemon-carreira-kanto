@@ -3,15 +3,16 @@
    Kanto vem embutido no index.html; as outras regiões são pacotes <id>.js baixados quando o
    jogador escolhe a região no lobby.
 
-   COMO ADICIONAR UMA REGIÃO (ex.: Hoenn / Gen 3):
-     1. src/<id>_data.js   -> DEX, BRANCH, STONE, STARTERS, TYPE_CHART, GYMS, ELITE e
+   COMO ADICIONAR UMA REGIÃO (Hoenn, a Gen 3, foi feita assim; use-a de modelo):
+     1. src/<id>_data.js   -> Pokédex nova + DEX/BRANCH/STONE herdados da região anterior,
+                              GYMS, ELITE, times (assignFoeTeams) e
                               REGIONS.<id> = Object.assign(REGIONS.<id>, {ready:true, ...})
-        src/<id>_events.js -> roletas por ginásio (mesmo formato de johto_events.js)
-     2. sprites: src/sprites/trainers_<id>/ e src/sprites/badges_<id>/ (1..8.png).
-        Os Pokémon 252-386 já existem na mesma pasta firered-leafgreen do PokeAPI.
-     3. assemble.py: uma chamada build_pack("<id>", range(...), ...) gera o <id>.js.
-     4. Aqui: tire o `soon:true`, ponha o arquivo em PACK_FILE e as cores no CSS
-        (body[data-region=<id>]).
+        src/<id>_events.js -> roletas por ginásio + Victory Road + pós-Liga (formato de hoenn_events.js)
+     2. sprites: um fetch_*.py baixa Pokémon, src/sprites/trainers_<id>/ e src/sprites/badges_<id>/ (1..8.png).
+     3. assemble.py: uma chamada build_pack("<id>", ...) gera o <id>.js.
+     4. Aqui: a região em REGIONS/REGION_ORDER, o arquivo em PACK_FILE, as dependências em
+        PACK_DEPS e as cores no CSS (body[data-region=<id>]).
+     5. Calibre o poder dos líderes por simulação e escreva o src/test_<id>.js.
    O save, os recordes e a Pokédex já ficam separados por região (chaves *_KEY).
    ===================================================================== */
 function snapRegion(){
@@ -33,11 +34,10 @@ const REGIONS = {
     name:"Johto", edition:"EDIÇÃO JOHTO · GEN 2", home:"New Bark Town", prof:"Prof. Elm", profIc:"🧑‍🔬", profKey:"j_elm",
     trainerPrefix:"j_", league:"Platô Índigo", rivalChamp:"lance", starters:["Chikorita","Cyndaquil","Totodile"], dexTotal:251,
   }},
-  /* Gen 3: aparece no lobby como prévia, sem pacote ainda */
-  hoenn: {id:"hoenn", ready:false, soon:true, theme:"hoenn", RT:{
+  /* Gen 3: o pacote hoenn.js usa os dados de Johto, então johto.js baixa antes (PACK_DEPS) */
+  hoenn: {id:"hoenn", ready:false, theme:"hoenn", RT:{
     name:"Hoenn", edition:"EDIÇÃO HOENN · GEN 3", home:"Littleroot Town", prof:"Prof. Birch", profIc:"🧑‍🔬", profKey:"h_birch",
-    trainerPrefix:"h_", league:"Ever Grande", rivalChamp:"steven", starters:["Treecko","Torchic","Mudkip"], dexTotal:386,
-    soonText:"A Gen 3 chega numa próxima atualização. Treecko, Torchic e Mudkip já estão te esperando.",
+    trainerPrefix:"h_", league:"Ever Grande", rivalChamp:"wallace", starters:["Treecko","Torchic","Mudkip"], dexTotal:386,
   }},
 };
 const REGION_ORDER = ["kanto","johto","hoenn"];
@@ -51,7 +51,8 @@ function useRegion(id){
   return true;
 }
 /* pacotes carregados sob demanda (arquivos ao lado do index.html) */
-const PACK_FILE = {johto:"johto.js"};
+const PACK_FILE = {johto:"johto.js", hoenn:"hoenn.js"};
+const PACK_DEPS = {hoenn:["johto"]};
 function loadScript(src, ok, fail){
   if(typeof document.createElement!=="function") return;
   const s=document.createElement("script"); s.src=src+"?v="+(window.BUILD_ID||"");
@@ -60,6 +61,14 @@ function loadScript(src, ok, fail){
 }
 function loadPack(id, cb){
   const r=REGIONS[id]; if(!r || r.ready || r.loading || !PACK_FILE[id]) return;
+  const dep=(PACK_DEPS[id]||[]).find(d=>!REGIONS[d].ready);
+  if(dep){
+    r.loading=true; r.failed=false;
+    const dr=REGIONS[dep];
+    if(dr.loading){ const t=setInterval(()=>{ if(!dr.loading){ clearInterval(t); r.loading=false; if(dr.failed){ r.failed=true; cb&&cb(); } else loadPack(id, cb); } }, 100); return; }
+    r.loading=false;
+    return loadPack(dep, ()=>{ if(REGIONS[dep].failed){ r.failed=true; cb&&cb(); } else loadPack(id, cb); });
+  }
   r.loading=true; r.failed=false;
   loadScript(PACK_FILE[id], ()=>{ r.loading=false; cb&&cb(); }, ()=>{ r.loading=false; r.failed=true; cb&&cb(); });
 }

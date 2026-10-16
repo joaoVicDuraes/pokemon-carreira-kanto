@@ -187,9 +187,9 @@ function toast(msg){
 }
 function loadImg(src){ return new Promise(r=>{ if(!src) return r(null); const i=new Image(); i.onload=()=>r(i); i.onerror=()=>r(null); i.src=src; }); }
 function careerReached(){
-  if(G.phase==='legend') return 'Venceu o Red no Mt. Silver';
+  if(G.phase==='legend') return `Venceu ${POST().who} em ${POST().place}`;
   if(G.phase==='champion') return `Campeão de ${RT.name}`;
-  if(G.battle && G.battle.isRed) return `Campeão de ${RT.name} · o Red venceu`;
+  if(G.battle && G.battle.isRed) return `Campeão de ${RT.name} · ${POST().who} venceu`;
   if(G.gymIndex>=GYMS.length) return G.vrDone ? `Caiu na Elite Four (${G.eliteIndex}/5)` : 'Caiu na Victory Road';
   return `Caiu no ginásio ${G.gymIndex+1}: ${GYMS[G.gymIndex].leader}`;
 }
@@ -207,7 +207,7 @@ async function buildShareCard(){
   rr(34,144,W-68,H-232,20); x.fillStyle='#FFFBEA'; x.fill(); x.lineWidth=6; x.strokeStyle='#1a1a1a'; x.stroke();
   const won=G.phase!=='gameover' || !!(G.battle && G.battle.isRed);
   rr(W/2-250,170,500,58,10); x.fillStyle=won?'#FFCB05':'#E3350D'; x.fill(); x.lineWidth=4; x.stroke();
-  txt(won?(G.phase==='legend'?'LENDA DO MT. SILVER':'CAMPEAO DA LIGA!'):'FIM DA CARREIRA', W/2, 210, '20px PS2P', won?'#3a2a00':'#fff');
+  txt(won?(G.phase==='legend'?px('Lenda de '+POST().place):'CAMPEAO DA LIGA!'):'FIM DA CARREIRA', W/2, 210, '20px PS2P', won?'#3a2a00':'#fff');
   txt(careerReached(), W/2, 268, '34px VT323', '#2B2B2B');
   const bi=await Promise.all(BADGES.map(loadImg)), bs=58, bx=W/2-(8*bs+7*12)/2;
   bi.forEach((im,i)=>{ if(!im) return; x.globalAlpha=i<G.gymIndex?1:0.18; x.drawImage(im, bx+i*(bs+12), 292, bs, bs); });

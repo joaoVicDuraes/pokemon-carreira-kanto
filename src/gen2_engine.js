@@ -60,7 +60,7 @@ function decisionTick(good, night){
 }
 
 /* cena fixa do Lago da Fúria (Johto, a caminho do 7º ginásio) */
-function redGyaradosDue(){ return !!(RT && RT.dayNight) && !G.silver && G.gymIndex===6 && !G.redGyarados; }
+function redGyaradosDue(){ return !!(RT && RT.redGyarados) && !G.silver && G.gymIndex===6 && !G.redGyarados; }
 function redGyaradosScene(){
   G.redGyarados=true;
   const before=snap(), m=addMon("Gyarados",30); m.shiny=true;
@@ -71,15 +71,22 @@ function redGyaradosScene(){
   G.phase="event"; render();
 }
 
-/* Mt. Silver e o Red (opcional, depois de ser campeão) */
+/* ---------- desafio pós-Liga (opcional, depois de ser campeão) ----------
+   Johto: Red no Mt. Silver. Hoenn: Steven no Meteor Falls. Os textos vêm de RT.post. */
+const POST_DEFAULT = {place:"Mt. Silver", ic:"🏔️", who:"o Red", Who:"O Red", badge:"🧢",
+  top:"O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada.",
+  road:"Mt. Silver: a montanha mais perigosa do mundo. Faltam {n} decisões até o topo.",
+  battle:"...\nO Red quer batalhar!", win:"...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!",
+  lose:"O Red venceu sem dizer uma palavra. A lenda do Mt. Silver continua invicta, mas o seu título de Campeão ninguém tira.",
+  climb:"Opcional: 3 decisões na montanha e o Red no topo"};
+function POST(){ return Object.assign({}, POST_DEFAULT, (RT && RT.post) || {}); }
 function hubSilver(){
-  const R=REGIONS[REGION].RED, can=G.step>=STEPS_PER_GYM;
-  const tw = can ? "O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada."
-                 : `Mt. Silver: a montanha mais perigosa do mundo. Faltam ${STEPS_PER_GYM-G.step} decisões até o topo.`;
-  scene(`<div class="ribbon plate"><span class="spk">✦</span>🏔️ MT. SILVER<span class="spk">✦</span></div>
-    ${foeBlock(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>", R.power, R.t, "elite", R)}
+  const R=REGIONS[REGION].RED, can=G.step>=STEPS_PER_GYM, P=POST();
+  const tw = can ? P.top : P.road.replace("{n}", STEPS_PER_GYM-G.step);
+  scene(`<div class="ribbon plate"><span class="spk">✦</span>${P.ic} ${P.place.toUpperCase()}<span class="spk">✦</span></div>
+    ${foeBlock(leaderImg(R),`A LENDA DE ${P.place.toUpperCase()}`,R.leader,`${typeTag(R.t)} Poder ${R.power}`,`${P.badge}<small>LENDA</small>`, R.power, R.t, "elite", R)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
-    ${can ? menu(btn("fightRed","⚔️ ENFRENTAR O RED","Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
+    ${can ? menu(btn("fightRed",`⚔️ ENFRENTAR ${P.who.toUpperCase()}`,"Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, "hubs", tw);
 }
 function challengeRed(){
@@ -89,10 +96,10 @@ function challengeRed(){
   G.phase="battle"; render();
 }
 function legendScreen(){
-  if(!G.legendRecorded){ G.legendRecorded=true; const r=loadRec(); r.legends=(r.legends||0)+1; saveRec(r); logAdd("gym","🧢","Venceu o Red no Mt. Silver"); }
+  const P=POST();
+  if(!G.legendRecorded){ G.legendRecorded=true; const r=loadRec(); r.legends=(r.legends||0)+1; saveRec(r); logAdd("gym",P.badge,`Venceu ${P.who} em ${P.place}`); }
   const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
-  scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU O RED!</div>
+  scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU ${P.who.toUpperCase()}!</div>
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
-    '...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!');
+    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof', P.win);
 }

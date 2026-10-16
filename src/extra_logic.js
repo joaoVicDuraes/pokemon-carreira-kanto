@@ -9,6 +9,8 @@ function doEvolve(m){
   const br=BRANCH[m.species];
   if(br){ const ft=nextFoeType(); n=br.slice().sort((a,b)=>typeMult(DEX[b].t,ft)-typeMult(DEX[a].t,ft) || Math.random()-0.5)[0]; }
   m.species=n; m.t=DEX[n].t; m.e=DEX[n].e;
+  /* Gen 3: o Nincada vira Ninjask e, se tiver espaço no time, deixa um Shedinja para trás */
+  if(n==="Ninjask" && DEX.Shedinja && G.team.length<6 && G.team.includes(m)){ const s=mon("Shedinja", m.lv); s.shiny=!!m.shiny; G.team.push(s); }
 }
 
 /* Pedra Evolutiva: verde presente em TODAS as roletas */

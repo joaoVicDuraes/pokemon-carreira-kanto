@@ -1,41 +1,45 @@
-# Pokémon Carreira de Treinador — Kanto
+# Pokémon Carreira de Treinador — Kanto, Johto e Hoenn
 
-Jogo de carreira por escolhas (estilo *The Fenomenum* / *Copero*) ambientado na Gen 1. Você escolhe seu inicial, tem 3 decisões na estrada antes de cada líder (roleta de eventos, treinar ou procurar Pokémon), enfrenta os 8 ginásios, a Victory Road e a Elite Four. Perdeu para um líder? Fim da carreira.
+Jogo de carreira por escolhas (estilo *The Fenomenum* / *Copero*). Você escolhe a região e o inicial, tem 3 decisões na estrada antes de cada líder (roleta de eventos, treinar ou procurar Pokémon), enfrenta os 8 ginásios, a Victory Road e a Elite Four. Perdeu para um líder? Fim da carreira.
+
+- **Kanto (Gen 1):** 151 Pokémon, FireRed/LeafGreen.
+- **Johto (Gen 2):** 251 Pokémon, ovos, amizade, dia e noite, cães lendários, Gyarados Vermelho e o Red no Mt. Silver.
+- **Hoenn (Gen 3):** 386 Pokémon, roteiro de Emerald, Equipes Aqua e Magma, Latias e Latios errantes, Nincada/Shedinja, Feebas/Milotic e o Steven no Meteor Falls.
 
 ## Jogar
 
-Abra `index.html` no navegador. É um arquivo único e funciona offline: fontes e sprites estão embutidos.
+Abra `index.html` no navegador. Kanto vem embutido; Johto e Hoenn baixam quando você escolhe a região no lobby. Depois da primeira visita pelo site, funciona offline.
 
 ## Estrutura
 
 ```
-index.html            jogo pronto (é o que o Vercel publica)
+index.html            jogo pronto com Kanto (é o que o Vercel publica)
+kanto_extra.js        sprites de costas e shiny de Kanto (gerado; baixa logo depois da abertura)
+johto.js / hoenn.js   pacotes das regiões (gerados; o de Hoenn depende do de Johto)
+sw.js, manifest.webmanifest, icon-*.png   app instalável e cache offline (gerados)
 og.png                prévia do link (WhatsApp, Discord, X)
-apple-touch-icon.png  ícone ao "Adicionar à Tela de Início" no iPhone
 src/
-  assemble.py         gera ../index.html
-  build_game.py       mapa espécie -> número da Pokédex
-  game_template.html  lógica: Pokédex, tipos, ginásios, eventos por ginásio
-  extra_logic.js      pedra evolutiva, lendários, Victory Road, roleta sem repetição, troca
+  assemble.py         gera tudo acima (python src/assemble.py)
+  game_template.html  lógica base: Pokédex de Kanto, tipos, ginásios, eventos por ginásio
+  extra_logic.js      pedra evolutiva, lendários, Victory Road, roleta, troca, times dos líderes de Kanto
+  gen2_engine.js      poder = soma do time, ovos, amizade, dia/noite, desafio pós-Liga
   ui_v2.js            interface e telas
-  polish.js           salvar/continuar, Pokédex entre carreiras, sons 8-bit
-  style_v2.css        visual estilo GBA
-  fonts.json          Press Start 2P + VT323 (OFL) em base64
-  sprites/            sprites FireRed/LeafGreen (frente, costas, shiny), treinadores e insígnias
-  make_og.py          regenera og.png e apple-touch-icon.png (precisa do Chrome)
-  test_game.js        testes: node src/test_game.js
-  region.js           motor de regiões e lobby (◀ KANTO ▶ JOHTO)
-  gen2_engine.js      ovos, amizade, dia/noite, Gyarados Vermelho, Mt. Silver/Red
-  johto_data.js       Pokédex 251, tipos Gen 2, ginásios e Elite Four de Johto
-  johto_events.js     eventos da roleta de Johto (rascunho em docs/johto-eventos-rascunho.md)
-  test_johto.js       testes de Johto: node src/test_johto.js
-johto.js              pacote de Johto (gerado; carregado quando o jogador escolhe Johto)
+  polish.js           salvar/continuar, Pokédex, sons 8-bit, card de compartilhar
+  region.js           motor de regiões e lobby (◀ KANTO ▶ JOHTO ▶ HOENN)
+  style_v2.css        visual estilo GBA, modo escuro
+  johto_data.js / johto_events.js   dados e roletas de Johto
+  hoenn_data.js / hoenn_events.js   dados e roletas de Hoenn
+  fetch_gen2_sprites.py / fetch_gen3_assets.py   baixam os sprites das regiões novas
+  make_og.py          regenera og.png e os ícones (precisa do Chrome)
+  test_game.js / test_johto.js / test_hoenn.js   testes: node src/test_<região>.js
+  sprites/            Pokémon (frente, costas, shiny), treinadores, insígnias e itens
 ```
 
 ## Rebuild depois de editar
 
 ```
 python src/assemble.py
+node src/test_game.js && node src/test_johto.js && node src/test_hoenn.js
 ```
 
 ## Publicar no Vercel
@@ -43,6 +47,13 @@ python src/assemble.py
 1. Em vercel.com: **Add New → Project** e importe este repositório.
 2. Framework Preset: **Other**. Deixe Build Command e Output Directory vazios.
 3. Deploy. O `index.html` da raiz vira a página principal.
+
+## Ideias para o futuro
+
+- **Novas gerações** (Sinnoh em diante): seguir o roteiro no topo de `src/region.js`.
+- **Ranking global:** hoje os recordes ficam no navegador de cada um; precisa de um servidor ou banco (ex.: Vercel KV / Supabase) e de alguma proteção contra recorde falso.
+- **Lista de shinies visível:** uma tela com todos os shinies que você já teve, por região (os dados já são guardados na Pokédex).
+- **Sistema de conquistas:** metas como "vencer só com o inicial", "fechar a Pokédex", "campeão sem perder Pokémon".
 
 ## Aviso
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Pokémon Carreira de Treinador — Kanto e Johto</title>
+<title>Pokémon Carreira de Treinador — Kanto, Johto e Hoenn</title>
 <meta name="description" content="Uma carreira de treinador Pokémon em Kanto e Johto: 8 ginásios, Elite Four, roleta de eventos, 251 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?">
 <meta name="theme-color" content="#E3350D">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="https://pokemon-carreira-kanto.vercel.app/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://pokemon-carreira-kanto.vercel.app/">
-<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto e Johto">
+<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto, Johto e Hoenn">
 <meta property="og:description" content="Uma carreira de treinador Pokémon em Kanto e Johto: 8 ginásios, Elite Four, roleta de eventos, 251 Pokémon e permadeath. Perdeu, acabou. Até onde você chega?">
 <meta property="og:image" content="https://pokemon-carreira-kanto.vercel.app/og.png">
 <meta property="og:image:width" content="1200">
@@ -991,6 +991,8 @@ function doEvolve(m){
   const br=BRANCH[m.species];
   if(br){ const ft=nextFoeType(); n=br.slice().sort((a,b)=>typeMult(DEX[b].t,ft)-typeMult(DEX[a].t,ft) || Math.random()-0.5)[0]; }
   m.species=n; m.t=DEX[n].t; m.e=DEX[n].e;
+  /* Gen 3: o Nincada vira Ninjask e, se tiver espaço no time, deixa um Shedinja para trás */
+  if(n==="Ninjask" && DEX.Shedinja && G.team.length<6 && G.team.includes(m)){ const s=mon("Shedinja", m.lv); s.shiny=!!m.shiny; G.team.push(s); }
 }
 
 /* Pedra Evolutiva: verde presente em TODAS as roletas */
@@ -1219,7 +1221,10 @@ function front(m, cls){
   return src ? `<img${cls ? ` class="${cls}"` : ""} src="${src}" alt="${m.species}">` : `<span class="emo">${m.e || "❔"}</span>`;
 }
 /* líderes e treinadores (sprites FRLG) e insígnias de Kanto */
-const FEM = f => ["Misty","Erika","Sabrina","Lorelei","Agatha","Whitney","Jasmine","Clair","Karen"].includes(f.leader);
+const FEM = f => ["Misty","Erika","Sabrina","Lorelei","Agatha","Whitney","Jasmine","Clair","Karen","Roxanne","Flannery","Winona","Phoebe","Glacia"].includes(f.leader);
+/* dupla de líderes (Tate & Liza): plural nos textos */
+const PLURAL = f => / & /.test(f.leader);
+const DONE = f => PLURAL(f) ? "os" : FEM(f) ? "a" : "o";
 function trainerKey(name){
   const k = /Rival|Champion/.test(name) ? RT.rivalChamp : name.toLowerCase().replace(/[^a-z]/g,'');
   return TRAINERS[RT.trainerPrefix+k] ? RT.trainerPrefix+k : k;
@@ -1550,12 +1555,12 @@ function hub(){
 }
 function hubVR(){
   const e=ELITE[0], can=G.step>=STEPS_PER_GYM;
-  const tw = can ? 'A Victory Road ficou para trás. As portas do Platô Índigo se abrem...'
+  const tw = can ? `A Victory Road ficou para trás. As portas da Liga em ${RT.league} se abrem...`
                  : `Victory Road: a última estrada antes da Liga. Depois daqui são 5 batalhas seguidas, sem voltar. Faltam ${STEPS_PER_GYM-G.step} decisões.`;
-  scene(`<div class="ribbon info">🛤️ VICTORY ROAD → PLATÔ ÍNDIGO</div>
+  scene(`<div class="ribbon info">🛤️ VICTORY ROAD → ${RT.league.toUpperCase()}</div>
     ${foeBlock(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`, e.power, e.t, 'elite', e)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
-    ${can ? menu(btn('league','🏛️ ENTRAR NO PLATÔ ÍNDIGO','Sem volta a partir daqui',{primary:true})) : decisionMenu()}
+    ${can ? menu(btn('league',`🏛️ ENTRAR NA LIGA`,`${RT.league} · sem volta a partir daqui`,{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, 'hubs', tw);
 }
 
@@ -1730,7 +1735,7 @@ function challenge(isElite){
 function setBar(el,pct){ if(!el) return; el.style.width=pct+'%'; el.style.background=pct>50?'#58D080':pct>20?'#F8D030':'#F05838'; }
 function battleScreen(){
   const b=G.battle, f=b.foe, me=bestAttacker(f.t);
-  const intro = b.isRed ? `...\nO Red quer batalhar!` : b.isElite ? (G.eliteIndex===ELITE.length-1 ? (RT.champBattle||`O CAMPEÃO, seu antigo Rival, quer batalhar!`) : `${f.leader}, da Elite Four, quer batalhar!`) : `${FEM(f)?'A Líder':'O Líder'} ${f.leader} quer batalhar!`;
+  const intro = b.isRed ? POST().battle : b.isElite ? (G.eliteIndex===ELITE.length-1 ? (RT.champBattle||`O CAMPEÃO, seu antigo Rival, quer batalhar!`) : `${f.leader}, da Elite Four, quer batalhar!`) : (PLURAL(f) ? `Os Líderes ${f.leader} querem batalhar!` : `${FEM(f)?'A Líder':'O Líder'} ${f.leader} quer batalhar!`);
   scene(`<div class="field">
       <div class="hpbox foe"><div class="hp-name"><span>${f.leader.toUpperCase()}</span>${typeTag(f.t)}</div><div class="hpbar"><span>PD</span><div class="track"><i id="hpF"></i></div></div><div class="hp-num">PODER ${f.power}</div></div>
       <div class="plat f"></div><div class="foe-av" id="avF">${leaderImg(f,'foe-tr')}</div>
@@ -1775,7 +1780,7 @@ function runBattle(me){
   T(6300,()=>{
     try{ SFX.faint(); }catch(e){}
     const loser=document.getElementById(b.win?'avF':'avM'); if(loser){ loser.classList.remove('shake'); loser.classList.add('faint'); }
-    say(b.win ? `${b.foe.leader} foi derrotad${FEM(b.foe)?'a':'o'}!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
+    say(b.win ? `${b.foe.leader} ${PLURAL(b.foe)?'foram':'foi'} derrotad${DONE(b.foe)}!\n<span class="reward">Vitória!</span>` : `${me.species} não aguentou...\n<span class="bad">Você perdeu para ${b.foe.leader}.</span>`);
   });
   T(7000,()=>{ const bm=document.getElementById('bmenu'); bm.innerHTML = menu(b.win ? btn('battleWin','CONTINUAR','',{primary:true}) : btn('gameover','💀 FIM DA CARREIRA','',{primary:true})); try{ fixPx(bm); }catch(e){} });
 }
@@ -1803,7 +1808,7 @@ function winScreen(){
   const {b, diff}=G.lastWin;
   if(b.isElite){
     const nx=ELITE[G.eliteIndex];
-    scene(`<div class="ribbon good">VITÓRIA NA LIGA!</div><div class="badge-pop tr">${leaderImg(b.foe)}</div><div class="ev-title">${b.foe.leader} derrotad${FEM(b.foe)?'a':'o'}!</div>
+    scene(`<div class="ribbon good">VITÓRIA NA LIGA!</div><div class="badge-pop tr">${leaderImg(b.foe)}</div><div class="ev-title">${b.foe.leader} derrotad${DONE(b.foe)}!</div>
       <div class="reward-line">TIME +1 NÍVEL · SEM DESCANSO</div>${e4Strip()}<div class="dialog" id="tw"></div>
       ${menu(btn('elite',`➡️ ENFRENTAR ${nx.leader.toUpperCase()}`,'',{primary:true}))}${partyHTML(diff)}`, 'event good',
       `${b.foe.leader}: "Impressionante... mas o próximo não vai ser tão gentil."\nPróximo: ${nx.leader}, poder ${nx.power}.`);
@@ -1818,7 +1823,7 @@ function winScreen(){
 }
 function eliteScreen(){
   const e=ELITE[G.eliteIndex], champ=G.eliteIndex===ELITE.length-1;
-  scene(`<div class="ribbon ${champ?'gold':'info'}">${champ?'🏆 SALA DO CAMPEÃO':'🏛️ PLATÔ ÍNDIGO · ELITE FOUR'}</div>${e4Strip()}
+  scene(`<div class="ribbon ${champ?'gold':'info'}">${champ?'🏆 SALA DO CAMPEÃO':`🏛️ ${RT.league.toUpperCase()} · ELITE FOUR`}</div>${e4Strip()}
     ${foeBlock(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`, e.power, e.t, 'elite', e)}
     ${partyStrip()}<div class="dialog" id="tw"></div>
     ${menu(btn('fight',`⚔️ ENFRENTAR ${e.leader.toUpperCase()}`,'Derrota aqui encerra a carreira',{primary:true}))}${partyHTML()}`, 'hubs',
@@ -1843,9 +1848,9 @@ function logHTML(){
 function gameOverScreen(){
   if(!G.recorded){ G.recorded=true; G.newRecord=commitRecord(false); }
   const cause = G.pendingRocketGameOver ? 'A Equipe Rocket levou seu último Pokémon. Sem parceiros, não há jornada.'
-    : (G.battle && G.battle.isRed) ? `O Red venceu sem dizer uma palavra. A lenda do Mt. Silver continua invicta, mas o seu título de Campeão ninguém tira.`
+    : (G.battle && G.battle.isRed) ? POST().lose
     : `Você perdeu para ${G.battle?G.battle.foe.leader:'o desafio'}. ${(RT&&RT.loseLine)||'Em Kanto não existe revanche oficial: a carreira termina aqui.'}`;
-  scene(`<div class="over-title">${G.battle&&G.battle.isRed?'O RED VENCEU':'FIM DA CARREIRA'}</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
+  scene(`<div class="over-title">${G.battle&&G.battle.isRed?POST().Who.toUpperCase()+' VENCEU':'FIM DA CARREIRA'}</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="dialog" id="tw"></div>${trainerCard(false)}${logHTML()}
     ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
     cause+'\nToda lenda também já perdeu. Levante e tente de novo.');
@@ -1854,7 +1859,7 @@ function hofScreen(){
   if(!G.recorded){ G.recorded=true; G.newRecord=commitRecord(true); logAdd('gym','👑',`Tornou-se Campeão de ${RT.name}!`); }
   const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
   const conf=Array.from({length:24},(_,i)=>`<i class="conf" style="left:${(i*41)%100}%;background:${['#E3350D','#2A75BB','#FFCB05','#3BB54A'][i%4]};animation-delay:${(i%8)*0.35}s;pointer-events:none"></i>`).join("");
-  const silverBtn = RT.silver && REGIONS[REGION].RED ? btn('silver','🏔️ SUBIR O MT. SILVER','Opcional: 3 decisões na montanha e o Red no topo',{primary:true}) : '';
+  const silverBtn = RT.silver && REGIONS[REGION].RED ? btn('silver',`${POST().ic} IR PARA ${POST().place.toUpperCase()}`,POST().climb,{primary:true}) : '';
   scene(`${conf}<div class="hof-title">HALL DA FAMA</div><div class="ribbon gold">CAMPEÃO DE ${RT.name.toUpperCase()}!</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
     ${menu(silverBtn, btn('restart','🔁 NOVA CARREIRA','',{primary:!silverBtn}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
@@ -1888,9 +1893,9 @@ function act(id, arg){
     case 'search': doSearch(); return;
     case 'back': G.phase='hub'; break;
     case 'challenge': challenge(false); return;
-    case 'league': G.vrDone=true; G.step=0; logAdd('gym','🏛️','Chegou ao Platô Índigo'); G.phase='elite'; break;
+    case 'league': G.vrDone=true; G.step=0; logAdd('gym','🏛️',`Chegou à Liga em ${RT.league}`); G.phase='elite'; break;
     case 'fight': challenge(true); return;
-    case 'silver': G.silver=true; G.step=0; G.phase='hub'; logAdd('gym','🏔️','Subiu o Mt. Silver'); break;
+    case 'silver': G.silver=true; G.step=0; G.phase='hub'; logAdd('gym',POST().ic,`Foi para ${POST().place}`); break;
     case 'fightRed': challengeRed(); return;
     case 'battleWin': applyWin(); return;
     case 'elite': G.phase='elite'; break;
@@ -2134,9 +2139,9 @@ function toast(msg){
 }
 function loadImg(src){ return new Promise(r=>{ if(!src) return r(null); const i=new Image(); i.onload=()=>r(i); i.onerror=()=>r(null); i.src=src; }); }
 function careerReached(){
-  if(G.phase==='legend') return 'Venceu o Red no Mt. Silver';
+  if(G.phase==='legend') return `Venceu ${POST().who} em ${POST().place}`;
   if(G.phase==='champion') return `Campeão de ${RT.name}`;
-  if(G.battle && G.battle.isRed) return `Campeão de ${RT.name} · o Red venceu`;
+  if(G.battle && G.battle.isRed) return `Campeão de ${RT.name} · ${POST().who} venceu`;
   if(G.gymIndex>=GYMS.length) return G.vrDone ? `Caiu na Elite Four (${G.eliteIndex}/5)` : 'Caiu na Victory Road';
   return `Caiu no ginásio ${G.gymIndex+1}: ${GYMS[G.gymIndex].leader}`;
 }
@@ -2154,7 +2159,7 @@ async function buildShareCard(){
   rr(34,144,W-68,H-232,20); x.fillStyle='#FFFBEA'; x.fill(); x.lineWidth=6; x.strokeStyle='#1a1a1a'; x.stroke();
   const won=G.phase!=='gameover' || !!(G.battle && G.battle.isRed);
   rr(W/2-250,170,500,58,10); x.fillStyle=won?'#FFCB05':'#E3350D'; x.fill(); x.lineWidth=4; x.stroke();
-  txt(won?(G.phase==='legend'?'LENDA DO MT. SILVER':'CAMPEAO DA LIGA!'):'FIM DA CARREIRA', W/2, 210, '20px PS2P', won?'#3a2a00':'#fff');
+  txt(won?(G.phase==='legend'?px('Lenda de '+POST().place):'CAMPEAO DA LIGA!'):'FIM DA CARREIRA', W/2, 210, '20px PS2P', won?'#3a2a00':'#fff');
   txt(careerReached(), W/2, 268, '34px VT323', '#2B2B2B');
   const bi=await Promise.all(BADGES.map(loadImg)), bs=58, bx=W/2-(8*bs+7*12)/2;
   bi.forEach((im,i)=>{ if(!im) return; x.globalAlpha=i<G.gymIndex?1:0.18; x.drawImage(im, bx+i*(bs+12), 292, bs, bs); });
@@ -2252,7 +2257,7 @@ function decisionTick(good, night){
 }
 
 /* cena fixa do Lago da Fúria (Johto, a caminho do 7º ginásio) */
-function redGyaradosDue(){ return !!(RT && RT.dayNight) && !G.silver && G.gymIndex===6 && !G.redGyarados; }
+function redGyaradosDue(){ return !!(RT && RT.redGyarados) && !G.silver && G.gymIndex===6 && !G.redGyarados; }
 function redGyaradosScene(){
   G.redGyarados=true;
   const before=snap(), m=addMon("Gyarados",30); m.shiny=true;
@@ -2263,15 +2268,22 @@ function redGyaradosScene(){
   G.phase="event"; render();
 }
 
-/* Mt. Silver e o Red (opcional, depois de ser campeão) */
+/* ---------- desafio pós-Liga (opcional, depois de ser campeão) ----------
+   Johto: Red no Mt. Silver. Hoenn: Steven no Meteor Falls. Os textos vêm de RT.post. */
+const POST_DEFAULT = {place:"Mt. Silver", ic:"🏔️", who:"o Red", Who:"O Red", badge:"🧢",
+  top:"O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada.",
+  road:"Mt. Silver: a montanha mais perigosa do mundo. Faltam {n} decisões até o topo.",
+  battle:"...\nO Red quer batalhar!", win:"...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!",
+  lose:"O Red venceu sem dizer uma palavra. A lenda do Mt. Silver continua invicta, mas o seu título de Campeão ninguém tira.",
+  climb:"Opcional: 3 decisões na montanha e o Red no topo"};
+function POST(){ return Object.assign({}, POST_DEFAULT, (RT && RT.post) || {}); }
 function hubSilver(){
-  const R=REGIONS[REGION].RED, can=G.step>=STEPS_PER_GYM;
-  const tw = can ? "O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada."
-                 : `Mt. Silver: a montanha mais perigosa do mundo. Faltam ${STEPS_PER_GYM-G.step} decisões até o topo.`;
-  scene(`<div class="ribbon plate"><span class="spk">✦</span>🏔️ MT. SILVER<span class="spk">✦</span></div>
-    ${foeBlock(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>", R.power, R.t, "elite", R)}
+  const R=REGIONS[REGION].RED, can=G.step>=STEPS_PER_GYM, P=POST();
+  const tw = can ? P.top : P.road.replace("{n}", STEPS_PER_GYM-G.step);
+  scene(`<div class="ribbon plate"><span class="spk">✦</span>${P.ic} ${P.place.toUpperCase()}<span class="spk">✦</span></div>
+    ${foeBlock(leaderImg(R),`A LENDA DE ${P.place.toUpperCase()}`,R.leader,`${typeTag(R.t)} Poder ${R.power}`,`${P.badge}<small>LENDA</small>`, R.power, R.t, "elite", R)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
-    ${can ? menu(btn("fightRed","⚔️ ENFRENTAR O RED","Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
+    ${can ? menu(btn("fightRed",`⚔️ ENFRENTAR ${P.who.toUpperCase()}`,"Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, "hubs", tw);
 }
 function challengeRed(){
@@ -2281,29 +2293,30 @@ function challengeRed(){
   G.phase="battle"; render();
 }
 function legendScreen(){
-  if(!G.legendRecorded){ G.legendRecorded=true; const r=loadRec(); r.legends=(r.legends||0)+1; saveRec(r); logAdd("gym","🧢","Venceu o Red no Mt. Silver"); }
+  const P=POST();
+  if(!G.legendRecorded){ G.legendRecorded=true; const r=loadRec(); r.legends=(r.legends||0)+1; saveRec(r); logAdd("gym",P.badge,`Venceu ${P.who} em ${P.place}`); }
   const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
-  scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU O RED!</div>
+  scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU ${P.who.toUpperCase()}!</div>
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
-    '...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!');
+    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof', P.win);
 }
 
-window.BUILD_ID="d13c7eca";
+window.BUILD_ID="c09c0f79";
 /* =====================================================================
    REGIÕES: um motor, vários pacotes de dados.
    Kanto vem embutido no index.html; as outras regiões são pacotes <id>.js baixados quando o
    jogador escolhe a região no lobby.
 
-   COMO ADICIONAR UMA REGIÃO (ex.: Hoenn / Gen 3):
-     1. src/<id>_data.js   -> DEX, BRANCH, STONE, STARTERS, TYPE_CHART, GYMS, ELITE e
+   COMO ADICIONAR UMA REGIÃO (Hoenn, a Gen 3, foi feita assim; use-a de modelo):
+     1. src/<id>_data.js   -> Pokédex nova + DEX/BRANCH/STONE herdados da região anterior,
+                              GYMS, ELITE, times (assignFoeTeams) e
                               REGIONS.<id> = Object.assign(REGIONS.<id>, {ready:true, ...})
-        src/<id>_events.js -> roletas por ginásio (mesmo formato de johto_events.js)
-     2. sprites: src/sprites/trainers_<id>/ e src/sprites/badges_<id>/ (1..8.png).
-        Os Pokémon 252-386 já existem na mesma pasta firered-leafgreen do PokeAPI.
-     3. assemble.py: uma chamada build_pack("<id>", range(...), ...) gera o <id>.js.
-     4. Aqui: tire o `soon:true`, ponha o arquivo em PACK_FILE e as cores no CSS
-        (body[data-region=<id>]).
+        src/<id>_events.js -> roletas por ginásio + Victory Road + pós-Liga (formato de hoenn_events.js)
+     2. sprites: um fetch_*.py baixa Pokémon, src/sprites/trainers_<id>/ e src/sprites/badges_<id>/ (1..8.png).
+     3. assemble.py: uma chamada build_pack("<id>", ...) gera o <id>.js.
+     4. Aqui: a região em REGIONS/REGION_ORDER, o arquivo em PACK_FILE, as dependências em
+        PACK_DEPS e as cores no CSS (body[data-region=<id>]).
+     5. Calibre o poder dos líderes por simulação e escreva o src/test_<id>.js.
    O save, os recordes e a Pokédex já ficam separados por região (chaves *_KEY).
    ===================================================================== */
 function snapRegion(){
@@ -2325,11 +2338,10 @@ const REGIONS = {
     name:"Johto", edition:"EDIÇÃO JOHTO · GEN 2", home:"New Bark Town", prof:"Prof. Elm", profIc:"🧑‍🔬", profKey:"j_elm",
     trainerPrefix:"j_", league:"Platô Índigo", rivalChamp:"lance", starters:["Chikorita","Cyndaquil","Totodile"], dexTotal:251,
   }},
-  /* Gen 3: aparece no lobby como prévia, sem pacote ainda */
-  hoenn: {id:"hoenn", ready:false, soon:true, theme:"hoenn", RT:{
+  /* Gen 3: o pacote hoenn.js usa os dados de Johto, então johto.js baixa antes (PACK_DEPS) */
+  hoenn: {id:"hoenn", ready:false, theme:"hoenn", RT:{
     name:"Hoenn", edition:"EDIÇÃO HOENN · GEN 3", home:"Littleroot Town", prof:"Prof. Birch", profIc:"🧑‍🔬", profKey:"h_birch",
-    trainerPrefix:"h_", league:"Ever Grande", rivalChamp:"steven", starters:["Treecko","Torchic","Mudkip"], dexTotal:386,
-    soonText:"A Gen 3 chega numa próxima atualização. Treecko, Torchic e Mudkip já estão te esperando.",
+    trainerPrefix:"h_", league:"Ever Grande", rivalChamp:"wallace", starters:["Treecko","Torchic","Mudkip"], dexTotal:386,
   }},
 };
 const REGION_ORDER = ["kanto","johto","hoenn"];
@@ -2343,7 +2355,8 @@ function useRegion(id){
   return true;
 }
 /* pacotes carregados sob demanda (arquivos ao lado do index.html) */
-const PACK_FILE = {johto:"johto.js"};
+const PACK_FILE = {johto:"johto.js", hoenn:"hoenn.js"};
+const PACK_DEPS = {hoenn:["johto"]};
 function loadScript(src, ok, fail){
   if(typeof document.createElement!=="function") return;
   const s=document.createElement("script"); s.src=src+"?v="+(window.BUILD_ID||"");
@@ -2352,6 +2365,14 @@ function loadScript(src, ok, fail){
 }
 function loadPack(id, cb){
   const r=REGIONS[id]; if(!r || r.ready || r.loading || !PACK_FILE[id]) return;
+  const dep=(PACK_DEPS[id]||[]).find(d=>!REGIONS[d].ready);
+  if(dep){
+    r.loading=true; r.failed=false;
+    const dr=REGIONS[dep];
+    if(dr.loading){ const t=setInterval(()=>{ if(!dr.loading){ clearInterval(t); r.loading=false; if(dr.failed){ r.failed=true; cb&&cb(); } else loadPack(id, cb); } }, 100); return; }
+    r.loading=false;
+    return loadPack(dep, ()=>{ if(REGIONS[dep].failed){ r.failed=true; cb&&cb(); } else loadPack(id, cb); });
+  }
   r.loading=true; r.failed=false;
   loadScript(PACK_FILE[id], ()=>{ r.loading=false; cb&&cb(); }, ()=>{ r.loading=false; r.failed=true; cb&&cb(); });
 }

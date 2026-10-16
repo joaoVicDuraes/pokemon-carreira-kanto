@@ -180,7 +180,7 @@ _h = hashlib.sha1()
 for f in sorted(os.listdir(BASE)):
     if f.endswith((".js", ".css", ".py", ".html")) and not f.startswith(("_", "test_")):
         _h.update(open(os.path.join(BASE, f), "rb").read())
-for sub in ["items", "trainers", "trainers_johto", "hoenn_preview"]:
+for sub in ["items", "trainers", "trainers_johto", "trainers_hoenn", "hoenn_preview"]:
     _h.update(",".join(sorted(os.listdir(os.path.join(BASE, "sprites", sub)))).encode())
 BUILD = _h.hexdigest()[:8]
 region = "window.BUILD_ID=%s;\n" % json.dumps(BUILD) + region
@@ -216,7 +216,7 @@ head = ('<meta name="description" content="%(d)s">\n'
         '<link rel="manifest" href="manifest.webmanifest">\n'
         '<link rel="icon" href="%(fav)s">\n<link rel="apple-touch-icon" href="%(s)sapple-touch-icon.png">\n'
         '<meta property="og:type" content="website">\n<meta property="og:url" content="%(s)s">\n'
-        '<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto e Johto">\n'
+        '<meta property="og:title" content="Pokémon Carreira de Treinador — Kanto, Johto e Hoenn">\n'
         '<meta property="og:description" content="%(d)s">\n'
         '<meta property="og:image" content="%(s)sog.png">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'
         '<meta property="og:locale" content="pt_BR">\n'
@@ -225,7 +225,7 @@ head = ('<meta name="description" content="%(d)s">\n'
 
 html = ('<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">\n'
-        '<title>Pokémon Carreira de Treinador — Kanto e Johto</title>\n' + head + '<style>\n' + css + '\n</style>\n</head>\n<body>\n'
+        '<title>Pokémon Carreira de Treinador — Kanto, Johto e Hoenn</title>\n' + head + '<style>\n' + css + '\n</style>\n</head>\n<body>\n'
         '<div id="app"><div id="dex"><div class="lens"><i></i></div><div class="leds"><b class="r"></b><b class="y"></b><b class="g"></b></div>'
         '<button id="mute" data-act="mute" aria-label="Desligar som">🔊</button>'
         '<div class="dex-title">CARREIRA<br>KANTO</div></div><div id="hud"></div><main id="scene" class="scene"></main><div id="dexfoot"><b class="b"></b><b class="r"></b><b class="y"></b><b class="g"></b></div></div>\n'
@@ -273,7 +273,8 @@ EGG = ("data:image/svg+xml," + "%3Csvg xmlns='http://www.w3.org/2000/svg' viewBo
 build_pack("johto", "J_", range(152, 252), "trainers_johto", "badges_johto", "johto_data.js", "johto_events.js",
            ["falkner","bugsy","whitney","morty","chuck","jasmine","pryce","clair","will","koga","bruno","karen","lance","silver","red","elm"],
            head_extra='SPRITES["Ovo"]=%s;' % json.dumps(EGG))
-# Gen 3 (quando existir): build_pack("hoenn", "H_", range(252, 387), "trainers_hoenn", "badges_hoenn", "hoenn_data.js", "hoenn_events.js", [...])
+build_pack("hoenn", "H_", range(252, 387), "trainers_hoenn", "badges_hoenn", "hoenn_data.js", "hoenn_events.js",
+           ["roxanne","brawly","wattson","flannery","norman","winona","tateliza","juan","sidney","phoebe","glacia","drake","wallace","steven","birch","may"])
 
 ROOT = os.path.dirname(BASE)
 io.open(os.path.join(ROOT, "kanto_extra.js"), "w", encoding="utf-8").write(extra_js)
@@ -291,7 +292,7 @@ manifest = {
 io.open(os.path.join(ROOT, "manifest.webmanifest"), "w", encoding="utf-8").write(json.dumps(manifest, ensure_ascii=False, indent=1))
 SW = """/* gerado por assemble.py — cache offline. Rede primeiro (deploy novo aparece na hora), cache se estiver sem internet. */
 const V=%s, CACHE="kc-"+V;
-const CORE=["./","./kanto_extra.js?v="+V,"./johto.js?v="+V,"./manifest.webmanifest","./icon-192.png","./apple-touch-icon.png"];
+const CORE=["./","./kanto_extra.js?v="+V,"./johto.js?v="+V,"./hoenn.js?v="+V,"./manifest.webmanifest","./icon-192.png","./apple-touch-icon.png"];
 self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{}))))); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener("fetch",e=>{

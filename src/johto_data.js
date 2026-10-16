@@ -154,7 +154,7 @@ REGIONS.johto = Object.assign(REGIONS.johto, {
   RED,
 });
 Object.assign(REGIONS.johto.RT, {
-  dayNight:true, silver:true,
+  dayNight:true, silver:true, redGyarados:true,
   stoneHint:"Pikachu, Eevee, Sunkern, Gloom, Onix (Metal Coat), Scyther (Metal Coat), Seadra (Dragon Scale) e Porygon (Up-Grade) evoluem com pedra ou item.",
   champBattle:"O CAMPEÃO LANCE quer batalhar!", champIntro:"A última porta. O Campeão Lance te espera com seus dragões.\n\"Mostre do que é feito o novo talento de Johto.\"",
   hofLine:"Lance aperta sua mão: \"Johto tem um novo Campeão.\"\nSeu time entra para o Hall da Fama!",

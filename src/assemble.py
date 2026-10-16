@@ -92,7 +92,7 @@ B1 = sub1(B1, "a 1 nível de virar Gyarados", "prestes a virar Gyarados", "magik
 # ---------- textos = efeito real (os helpers eram amplificados, os textos não) ----------
 gain_all = lambda n: n + 3
 gain_one = lambda n: 2 * n + 2
-loss = lambda n: max(1, round(n * 0.7))
+loss = lambda n: max(1, round(n * 0.45))   # perdas de nível mais leves: com a soma do time, -N no time todo pesa 6x
 start = B1.index("const GYM_EVENTS=[")
 head, body = B1[:start], B1[start:]
 chunks = re.split(r"(?=\{ic:)", body)

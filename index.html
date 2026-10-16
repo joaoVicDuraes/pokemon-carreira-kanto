@@ -852,7 +852,7 @@ let GYM_EVENTS=[
     ],
     red:[
       {ic:"🐝",lb:"Enxame Beedrill",fn:()=>{const m=dropLvOne(G.team[0],1);return{title:"Enxame de Beedrill",text:`Seu time é atacado e você corre até o Centro Pokémon. Exaustão: <b>${m.species} -1 nível</b>.`,highlight:m};}},
-      {ic:"🤢",lb:"Veneno de Weedle",fn:()=>{const t=randMember(true)||G.team[0];dropLvOne(t,2);return{title:"Veneno de Weedle",text:`Sem Antídoto, <b>${t.species}</b> passa mal na travessia e chega enfraquecido ao ginásio: <b>-2 níveis</b>.`,highlight:t};}},
+      {ic:"🤢",lb:"Veneno de Weedle",fn:()=>{const t=randMember(true)||G.team[0];dropLvOne(t,1);return{title:"Veneno de Weedle",text:`Sem Antídoto, <b>${t.species}</b> passa mal na travessia e chega enfraquecido ao ginásio: <b>-1 nível</b>.`,highlight:t};}},
       {ic:"🐦",lb:"Susto na grama",loss:true,fn:()=>{const g=loseWeakest();if(!g)return{title:"Susto na Grama Alta",text:`Um Pidgeotto assusta o time, mas você só tem seu inicial — ninguém fugiu.`,highlight:null};return{title:"Susto na Grama Alta",text:`Seu Pokémon mais fraco se assusta com um Pidgeotto e <b>foge de volta pra Rota 1</b>: perdeu ${g.species}.`,highlight:null};}},
     ]
   },
@@ -906,7 +906,7 @@ let GYM_EVENTS=[
     red:[
       {ic:"🌾",lb:"Frustração Safari",fn:()=>{dropLvAll(1);return{title:"Frustração na Safari Zone",text:`O Pokémon incrível foge e você se perde na selva. O time gasta todas as energias te procurando: <b>-1 nível gerais</b>.`,highlight:null};}},
       {ic:"🏍️",lb:"Gangue de motoqueiros",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Gangue de Motoqueiros",text:`Uma gangue de Cue Balls te cerca na Rota 17 e <b>rouba ${st.species}</b> (seu segundo maior nível).`,highlight:null};}},
-      {ic:"☠️",lb:"Armadilha ninja",fn:()=>{const a=G.team[0],b=G.team[1]||G.team[0];dropLvOne(a,2);if(b!==a)dropLvOne(b,2);return{title:"Armadilha Ninja Tóxica",text:`Discípulos de Koga envenenam suas frutas. Dois Pokémon entram no ginásio enfraquecidos: <b>-2 níveis cada</b>.`,highlight:a};}},
+      {ic:"☠️",lb:"Armadilha ninja",fn:()=>{const a=G.team[0],b=G.team[1]||G.team[0];dropLvOne(a,1);if(b!==a)dropLvOne(b,1);return{title:"Armadilha Ninja Tóxica",text:`Discípulos de Koga envenenam suas frutas. Dois Pokémon entram no ginásio enfraquecidos: <b>-1 nível cada</b>.`,highlight:a};}},
     ]
   },
   /* 5 — Sabrina (Psíquico) ------------------------------------- */
@@ -918,8 +918,8 @@ let GYM_EVENTS=[
     ],
     red:[
       {ic:"🚀",lb:"Emboscada Giovanni",loss:true,fn:()=>{const s=strongest();if(G.team.length<=1){G.pendingRocketGameOver=true;G.stats.stolen++;return rocketLast();}const i=G.team.indexOf(s===G.team[0]?(G.team[1]||s):s);const st=G.team.splice(i,1)[0];G.stats.stolen++;return{title:"Emboscada de Giovanni",text:`O chefe da Rocket te derrota no 11º andar e <b>confisca ${st.species}</b> como troféu.`,highlight:null};}},
-      {ic:"🌀",lb:"Labirinto teleporte",fn:()=>{dropLvAll(2);return{title:"Labirinto de Teletransporte",text:`Preso nos pisos de teleporte, você enfrenta todos os médiuns antes da líder. O time chega no limite: <b>-2 níveis geral</b>.`,highlight:null};}},
-      {ic:"🧠",lb:"Controle mental",fn:()=>{const t=randMember(false);dropLvOne(t,2);return{title:"Controle Mental",text:`O poder psíquico confunde <b>${t.species}</b>, que esquece seus melhores golpes: <b>-2 níveis</b> neste ginásio.`,highlight:t};}},
+      {ic:"🌀",lb:"Labirinto teleporte",fn:()=>{dropLvAll(1);return{title:"Labirinto de Teletransporte",text:`Preso nos pisos de teleporte, você enfrenta todos os médiuns antes da líder. O time chega no limite: <b>-1 nível geral</b>.`,highlight:null};}},
+      {ic:"🧠",lb:"Controle mental",fn:()=>{const t=randMember(false);dropLvOne(t,1);return{title:"Controle Mental",text:`O poder psíquico confunde <b>${t.species}</b>, que esquece seus melhores golpes: <b>-1 nível</b> neste ginásio.`,highlight:t};}},
     ]
   },
   /* 6 — Blaine (Fogo) ------------------------------------------ */
@@ -931,7 +931,7 @@ let GYM_EVENTS=[
     ],
     red:[
       {ic:"🎭",lb:"Ladrão na Mansão",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Ladrão na Mansão Pokémon",text:`Um Burglar se aproveita da fumaça e <b>furta ${st.species}</b> na surdina.`,highlight:null};}},
-      {ic:"🔥",lb:"Quiz errado",fn:()=>{dropLvAll(2);return{title:"Quiz do Blaine Errado",text:`Você erra o quiz e é forçado a batalhar contra todos os treinadores sob calor extremo: <b>-2 níveis gerais</b>.`,highlight:null};}},
+      {ic:"🔥",lb:"Quiz errado",fn:()=>{dropLvAll(1);return{title:"Quiz do Blaine Errado",text:`Você erra o quiz e é forçado a batalhar contra todos os treinadores sob calor extremo: <b>-1 nível gerais</b>.`,highlight:null};}},
       {ic:"🌊",lb:"Correnteza Seafoam",loss:true,fn:()=>{const g=loseWeakest();if(!g)return{title:"Correnteza das Ilhas Seafoam",text:`A corrente arrasta a jangada, mas você segura seu único Pokémon a tempo.`,highlight:null};return{title:"Correnteza das Ilhas Seafoam",text:`Uma corrente arrasta sua jangada; pra salvar sua vida, <b>${g.species} fica pra trás</b> na caverna (perda permanente).`,highlight:null};}},
     ]
   },
@@ -944,8 +944,8 @@ let GYM_EVENTS=[
     ],
     red:[
       {ic:"🚀",lb:"Ultimato Rocket",loss:true,fn:()=>{const st=stealOne(true);if(!st)return rocketLast();return{title:"Ultimato da Equipe Rocket",text:`A elite da Rocket faz uma emboscada pesada na Rota 22 e <b>rouba ${st.species}</b>, um titular seu.`,highlight:null};}},
-      {ic:"🌋",lb:"Fissure",fn:()=>{const t=randMember(false);dropLvOne(t,4);return{title:"Tremor de Terra (Fissure)",text:`Testes sísmicos abrem uma fenda. <b>${t.species}</b> cai e fica gravemente ferido: <b>-4 níveis</b>.`,highlight:t};}},
-      {ic:"🌀",lb:"Piso giratório",fn:()=>{dropLvAll(2);return{title:"Piso Giratório Mortal",text:`As armadilhas do ginásio de Giovanni deixam o time tonto: <b>-2 níveis em cada membro</b> antes da luta.`,highlight:null};}},
+      {ic:"🌋",lb:"Fissure",fn:()=>{const t=randMember(false);dropLvOne(t,2);return{title:"Tremor de Terra (Fissure)",text:`Testes sísmicos abrem uma fenda. <b>${t.species}</b> cai e fica gravemente ferido: <b>-2 níveis</b>.`,highlight:t};}},
+      {ic:"🌀",lb:"Piso giratório",fn:()=>{dropLvAll(1);return{title:"Piso Giratório Mortal",text:`As armadilhas do ginásio de Giovanni deixam o time tonto: <b>-1 nível em cada membro</b> antes da luta.`,highlight:null};}},
     ]
   },
 ];
@@ -1072,6 +1072,43 @@ function swapIn(i){
 function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5); return nw; }
 
 
+/* ============ Fatias verdes presentes em TODA roleta (Kanto, Johto, Victory Road, Mt. Silver) ============
+   Com o poder = soma do time inteiro, a roleta precisa render mais que treinar para valer o risco:
+   o "Encontro selvagem" é uma captura forte (perto do nível do seu melhor) e o "Dia de sorte" dá
+   o dobro do treino. */
+function wildEncounter(){
+  const w=pickWild(), live=G.team.filter(x=>!x.egg);
+  const best=live.length ? Math.max(...live.map(x=>x.lv)) : 5;
+  const m=addMon(w.species, Math.max(w.lv, best), true);
+  tryEvolveSilent(m);
+  return {title:"Encontro Selvagem!", text:`Um <b>${m.species}</b> selvagem e forte (Lv ${m.lv}) pula da grama alta! Uma batalha dura, a Poké Bola balança três vezes... <span class="reward">Capturado!</span>`, highlight:m};
+}
+function luckyDay(){
+  lvlAll(4);
+  return {title:"Dia de Sorte", text:`Tudo dá certo na estrada: treinadores pra duelar, frutas no caminho e um Centro Pokémon na hora certa. <span class="reward">Time inteiro +5 níveis!</span>`, highlight:null};
+}
+const UNIVERSAL_GREEN=[
+  {ic:"🌿", lb:"Encontro selvagem", w:1.6, fn:wildEncounter},
+  {ic:"🍀", lb:"Dia de sorte", w:1.6, fn:luckyDay},
+];
+/* proporção de VERDE por fase: 75% nos ginásios 1-2, 62% nos 3-5 e 52% do 6º em diante */
+function greenRatio(){
+  const gi=G.silver ? 8 : G.gymIndex;
+  return gi<=1 ? 0.75 : gi<=4 ? 0.62 : 0.52;
+}
+function setGreens(set){ return set.green.concat(UNIVERSAL_GREEN.filter(u=>!set.green.some(g=>g.lb===u.lb))); }
+/* mistura as cores pela roda (verde e vermelho alternados), em vez de todos os verdes juntos */
+function mixSectors(list){
+  const g=list.filter(s=>s.good), r=list.filter(s=>!s.good), out=[];
+  const tg=g.reduce((a,s)=>a+s.frac,0)||1, tr=r.reduce((a,s)=>a+s.frac,0)||1;
+  let pg=0, pr=0, i=0, j=0;
+  while(i<g.length || j<r.length){
+    const useG = j>=r.length || (i<g.length && pg/tg <= pr/tr);
+    if(useG){ pg+=g[i].frac; out.push(g[i++]); } else { pr+=r[j].frac; out.push(r[j++]); }
+  }
+  return out;
+}
+
 /* ============ Roleta sem repetição dentro do mesmo ginásio ============
    O evento que saiu sai da roda até o próximo ginásio (ou até sair da Victory Road).
    A fatia removida é dividida entre as fatias da MESMA cor que não tiram Pokémon,
@@ -1092,14 +1129,14 @@ function currentGymSet(){
 function wheelSectors(){
   const set=currentGymSet(), gr=greenRatio(), used=usedLabels();
   const ok=ev=>(!ev.night || isNight()) && (!ev.cond || ev.cond());
-  const greens=set.green.filter(ok), reds=set.red.filter(ok);
+  const greens=setGreens(set).filter(ok), reds=set.red.filter(ok);
   const greenW=greens.map(ev=>ev.w||1), totG=greenW.reduce((a,b)=>a+b,0);
   const redW=reds.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
   const all=[];
   greens.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr*greenW[i]/totG}));
   reds.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
   const keep=all.filter(s=>!used.includes(s.ev.lb));
-  if(!keep.length) return all;                      // segurança: nunca roda vazia
+  if(!keep.length) return mixSectors(all);          // segurança: nunca roda vazia
   all.filter(s=>used.includes(s.ev.lb)).forEach(gone=>{
     let to=keep.filter(s=>s.good===gone.good && !s.ev.loss);
     if(!to.length) to=keep.filter(s=>!s.ev.loss);
@@ -1107,7 +1144,7 @@ function wheelSectors(){
     const tot=to.reduce((a,s)=>a+s.frac,0);
     to.forEach(s=>{ s.frac+=gone.frac*s.frac/tot; });
   });
-  return keep;
+  return mixSectors(keep);
 }
 function rollGymEvent(){
   const sec=wheelSectors(); let r=Math.random()*sec.reduce((a,s)=>a+s.frac,0);
@@ -1523,10 +1560,19 @@ function hubVR(){
 }
 
 /* ---------- roleta circular ---------- */
+/* fatias grandes viram 2-3 pedaços espalhados, pra verde e vermelho se alternarem pela roda inteira
+   (só muda o desenho: a chance de cada evento é a soma dos pedaços dele) */
+function wheelPieces(list){
+  const pieces=[];
+  list.forEach(s=>{ const k=Math.min(3, Math.max(1, Math.ceil(s.frac/0.13))); for(let j=0;j<k;j++) pieces.push(Object.assign({}, s, {frac:s.frac/k, piece:j})); });
+  /* intercala por cor e afasta pedaços do mesmo evento */
+  const g=pieces.filter(p=>p.good).sort((a,b)=>a.piece-b.piece), r=pieces.filter(p=>!p.good).sort((a,b)=>a.piece-b.piece);
+  return mixSectors(g.concat(r));
+}
 let SPIN=0;
 function rouletteScreen(){
   if(!G.pendingRoll){ const p=rollGymEvent(); G.pendingRoll={lb:p.ev.lb, good:p.good}; saveGame(); }
-  const tok=++SPIN, picked=resolveRoll(G.pendingRoll), live=wheelSectors();
+  const tok=++SPIN, picked=resolveRoll(G.pendingRoll), live=wheelPieces(wheelSectors());
   const gr=live.filter(s=>s.good).reduce((a,s)=>a+s.frac,0);   // chance real de sorte nesta roda
   const sectors=live.map(s=>({ev:s.ev, frac:s.frac,
     col: s.good ? (s.i%2?'url(#gG1)':'url(#gG2)') : s.ev.loss ? 'url(#gL)' : (s.i%2?'url(#gR1)':'url(#gR2)')}));
@@ -1534,10 +1580,13 @@ function rouletteScreen(){
   const R=112, C=135, pol=(r,deg)=>{ const a=deg*Math.PI/180; return [C+r*Math.cos(a), C+r*Math.sin(a)]; };
   sectors.forEach(s=>{ if(s.ev.lb==='Pedra evolutiva') s.col='url(#gS)'; });
   let ang=-90, tStart=-90, tSweep=10, paths="", icons="", hitIdx=0; const starts=[];
+  /* o evento sorteado pode ter vários pedaços na roda: escolhe um deles (proporcional ao tamanho) pra parar */
+  const cand=sectors.map((s,i)=>s.ev===picked.ev?i:-1).filter(i=>i>=0);
+  let landOn=cand[0]; { let r=Math.random()*cand.reduce((a,i)=>a+sectors[i].frac,0); for(const i of cand){ r-=sectors[i].frac; if(r<=0){ landOn=i; break; } } }
   sectors.forEach((s,idx)=>{
     const sw=s.frac*360, st=ang; ang+=sw; starts.push(st);
     { const k=WHEEL_ICON[s.ev.lb]; if(k && k[0]==='P') dexSeen(k.slice(2)); }
-    if(s.ev===picked.ev){ tStart=st; tSweep=sw; hitIdx=idx; }
+    if(idx===landOn){ tStart=st; tSweep=sw; hitIdx=idx; }
     const p1=pol(R,st), p2=pol(R,st+sw);
     paths+=`<path class="sec" data-i="${idx}" d="M${C},${C} L${p1[0].toFixed(1)},${p1[1].toFixed(1)} A${R},${R} 0 ${sw>180?1:0} 1 ${p2[0].toFixed(1)},${p2[1].toFixed(1)} Z" fill="${s.col}" stroke="#3a1f10" stroke-width="2" stroke-linejoin="round"/>`;
     const sz = sw>=40?58 : sw>=26?46 : sw>=16?32 : 0;
@@ -1615,7 +1664,11 @@ function doTrain(){
   G.phase='event'; render();
 }
 function doSearch(){
-  const nt=isNight(), before=snap(), w=pickWild(), m=addMon(w.species, w.lv);
+  /* captura garantida, mas de um Pokémon "comum": nível perto da média do time, não do seu melhor
+     (a roleta é que dá as capturas fortes) */
+  const nt=isNight(), before=snap(), w=pickWild();
+  const live=G.team.filter(x=>!x.egg), avg=live.length ? live.reduce((a,x)=>a+x.lv,0)/live.length : 5;
+  const m=addMon(w.species, Math.max(w.lv, Math.round(avg*0.8)), true);
   G.step++; G.day++; decisionTick(false, nt);
   const diff=diffOf(before); postProcess(diff);
   G.lastResult={kind:'search', good:true, ic:'🔎', title:'Captura garantida!',
@@ -1937,7 +1990,7 @@ function saveSummary(o){
 /* sorteio da roleta gravado antes do giro */
 function resolveRoll(pr){
   const set=currentGymSet();
-  const ev=(pr.good?set.green:set.red).find(e=>e.lb===pr.lb) || [...set.green,...set.red].find(e=>e.lb===pr.lb);
+  const ev=(pr.good?setGreens(set):set.red).find(e=>e.lb===pr.lb) || [...setGreens(set),...set.red].find(e=>e.lb===pr.lb);
   return ev ? {ev, good:pr.good} : rollGymEvent();
 }
 
@@ -2236,7 +2289,7 @@ function legendScreen(){
     '...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!');
 }
 
-window.BUILD_ID="7d3baf75";
+window.BUILD_ID="d13c7eca";
 /* =====================================================================
    REGIÕES: um motor, vários pacotes de dados.
    Kanto vem embutido no index.html; as outras regiões são pacotes <id>.js baixados quando o

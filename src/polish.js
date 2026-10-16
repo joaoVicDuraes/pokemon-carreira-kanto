@@ -43,7 +43,7 @@ function saveSummary(o){
 /* sorteio da roleta gravado antes do giro */
 function resolveRoll(pr){
   const set=currentGymSet();
-  const ev=(pr.good?set.green:set.red).find(e=>e.lb===pr.lb) || [...set.green,...set.red].find(e=>e.lb===pr.lb);
+  const ev=(pr.good?setGreens(set):set.red).find(e=>e.lb===pr.lb) || [...setGreens(set),...set.red].find(e=>e.lb===pr.lb);
   return ev ? {ev, good:pr.good} : rollGymEvent();
 }
 

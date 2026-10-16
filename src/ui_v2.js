@@ -387,10 +387,19 @@ function hubVR(){
 }
 
 /* ---------- roleta circular ---------- */
+/* fatias grandes viram 2-3 pedaços espalhados, pra verde e vermelho se alternarem pela roda inteira
+   (só muda o desenho: a chance de cada evento é a soma dos pedaços dele) */
+function wheelPieces(list){
+  const pieces=[];
+  list.forEach(s=>{ const k=Math.min(3, Math.max(1, Math.ceil(s.frac/0.13))); for(let j=0;j<k;j++) pieces.push(Object.assign({}, s, {frac:s.frac/k, piece:j})); });
+  /* intercala por cor e afasta pedaços do mesmo evento */
+  const g=pieces.filter(p=>p.good).sort((a,b)=>a.piece-b.piece), r=pieces.filter(p=>!p.good).sort((a,b)=>a.piece-b.piece);
+  return mixSectors(g.concat(r));
+}
 let SPIN=0;
 function rouletteScreen(){
   if(!G.pendingRoll){ const p=rollGymEvent(); G.pendingRoll={lb:p.ev.lb, good:p.good}; saveGame(); }
-  const tok=++SPIN, picked=resolveRoll(G.pendingRoll), live=wheelSectors();
+  const tok=++SPIN, picked=resolveRoll(G.pendingRoll), live=wheelPieces(wheelSectors());
   const gr=live.filter(s=>s.good).reduce((a,s)=>a+s.frac,0);   // chance real de sorte nesta roda
   const sectors=live.map(s=>({ev:s.ev, frac:s.frac,
     col: s.good ? (s.i%2?'url(#gG1)':'url(#gG2)') : s.ev.loss ? 'url(#gL)' : (s.i%2?'url(#gR1)':'url(#gR2)')}));
@@ -398,10 +407,13 @@ function rouletteScreen(){
   const R=112, C=135, pol=(r,deg)=>{ const a=deg*Math.PI/180; return [C+r*Math.cos(a), C+r*Math.sin(a)]; };
   sectors.forEach(s=>{ if(s.ev.lb==='Pedra evolutiva') s.col='url(#gS)'; });
   let ang=-90, tStart=-90, tSweep=10, paths="", icons="", hitIdx=0; const starts=[];
+  /* o evento sorteado pode ter vários pedaços na roda: escolhe um deles (proporcional ao tamanho) pra parar */
+  const cand=sectors.map((s,i)=>s.ev===picked.ev?i:-1).filter(i=>i>=0);
+  let landOn=cand[0]; { let r=Math.random()*cand.reduce((a,i)=>a+sectors[i].frac,0); for(const i of cand){ r-=sectors[i].frac; if(r<=0){ landOn=i; break; } } }
   sectors.forEach((s,idx)=>{
     const sw=s.frac*360, st=ang; ang+=sw; starts.push(st);
     { const k=WHEEL_ICON[s.ev.lb]; if(k && k[0]==='P') dexSeen(k.slice(2)); }
-    if(s.ev===picked.ev){ tStart=st; tSweep=sw; hitIdx=idx; }
+    if(idx===landOn){ tStart=st; tSweep=sw; hitIdx=idx; }
     const p1=pol(R,st), p2=pol(R,st+sw);
     paths+=`<path class="sec" data-i="${idx}" d="M${C},${C} L${p1[0].toFixed(1)},${p1[1].toFixed(1)} A${R},${R} 0 ${sw>180?1:0} 1 ${p2[0].toFixed(1)},${p2[1].toFixed(1)} Z" fill="${s.col}" stroke="#3a1f10" stroke-width="2" stroke-linejoin="round"/>`;
     const sz = sw>=40?58 : sw>=26?46 : sw>=16?32 : 0;
@@ -479,7 +491,11 @@ function doTrain(){
   G.phase='event'; render();
 }
 function doSearch(){
-  const nt=isNight(), before=snap(), w=pickWild(), m=addMon(w.species, w.lv);
+  /* captura garantida, mas de um Pokémon "comum": nível perto da média do time, não do seu melhor
+     (a roleta é que dá as capturas fortes) */
+  const nt=isNight(), before=snap(), w=pickWild();
+  const live=G.team.filter(x=>!x.egg), avg=live.length ? live.reduce((a,x)=>a+x.lv,0)/live.length : 5;
+  const m=addMon(w.species, Math.max(w.lv, Math.round(avg*0.8)), true);
   G.step++; G.day++; decisionTick(false, nt);
   const diff=diffOf(before); postProcess(diff);
   G.lastResult={kind:'search', good:true, ic:'🔎', title:'Captura garantida!',

@@ -1,5 +1,5 @@
 /* gerado por assemble.py — cache offline. Rede primeiro (deploy novo aparece na hora), cache se estiver sem internet. */
-const V="7d3baf75", CACHE="kc-"+V;
+const V="d13c7eca", CACHE="kc-"+V;
 const CORE=["./","./kanto_extra.js?v="+V,"./johto.js?v="+V,"./manifest.webmanifest","./icon-192.png","./apple-touch-icon.png"];
 self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{}))))); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });

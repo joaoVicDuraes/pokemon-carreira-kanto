@@ -90,6 +90,43 @@ function swapIn(i){
 function skipSwap(){ const nw=G.pendingSwap; G.pendingSwap=null; if(nw) lvlAll(5); return nw; }
 
 
+/* ============ Fatias verdes presentes em TODA roleta (Kanto, Johto, Victory Road, Mt. Silver) ============
+   Com o poder = soma do time inteiro, a roleta precisa render mais que treinar para valer o risco:
+   o "Encontro selvagem" é uma captura forte (perto do nível do seu melhor) e o "Dia de sorte" dá
+   o dobro do treino. */
+function wildEncounter(){
+  const w=pickWild(), live=G.team.filter(x=>!x.egg);
+  const best=live.length ? Math.max(...live.map(x=>x.lv)) : 5;
+  const m=addMon(w.species, Math.max(w.lv, best), true);
+  tryEvolveSilent(m);
+  return {title:"Encontro Selvagem!", text:`Um <b>${m.species}</b> selvagem e forte (Lv ${m.lv}) pula da grama alta! Uma batalha dura, a Poké Bola balança três vezes... <span class="reward">Capturado!</span>`, highlight:m};
+}
+function luckyDay(){
+  lvlAll(4);
+  return {title:"Dia de Sorte", text:`Tudo dá certo na estrada: treinadores pra duelar, frutas no caminho e um Centro Pokémon na hora certa. <span class="reward">Time inteiro +5 níveis!</span>`, highlight:null};
+}
+const UNIVERSAL_GREEN=[
+  {ic:"🌿", lb:"Encontro selvagem", w:1.6, fn:wildEncounter},
+  {ic:"🍀", lb:"Dia de sorte", w:1.6, fn:luckyDay},
+];
+/* proporção de VERDE por fase: 75% nos ginásios 1-2, 62% nos 3-5 e 52% do 6º em diante */
+function greenRatio(){
+  const gi=G.silver ? 8 : G.gymIndex;
+  return gi<=1 ? 0.75 : gi<=4 ? 0.62 : 0.52;
+}
+function setGreens(set){ return set.green.concat(UNIVERSAL_GREEN.filter(u=>!set.green.some(g=>g.lb===u.lb))); }
+/* mistura as cores pela roda (verde e vermelho alternados), em vez de todos os verdes juntos */
+function mixSectors(list){
+  const g=list.filter(s=>s.good), r=list.filter(s=>!s.good), out=[];
+  const tg=g.reduce((a,s)=>a+s.frac,0)||1, tr=r.reduce((a,s)=>a+s.frac,0)||1;
+  let pg=0, pr=0, i=0, j=0;
+  while(i<g.length || j<r.length){
+    const useG = j>=r.length || (i<g.length && pg/tg <= pr/tr);
+    if(useG){ pg+=g[i].frac; out.push(g[i++]); } else { pr+=r[j].frac; out.push(r[j++]); }
+  }
+  return out;
+}
+
 /* ============ Roleta sem repetição dentro do mesmo ginásio ============
    O evento que saiu sai da roda até o próximo ginásio (ou até sair da Victory Road).
    A fatia removida é dividida entre as fatias da MESMA cor que não tiram Pokémon,
@@ -110,14 +147,14 @@ function currentGymSet(){
 function wheelSectors(){
   const set=currentGymSet(), gr=greenRatio(), used=usedLabels();
   const ok=ev=>(!ev.night || isNight()) && (!ev.cond || ev.cond());
-  const greens=set.green.filter(ok), reds=set.red.filter(ok);
+  const greens=setGreens(set).filter(ok), reds=set.red.filter(ok);
   const greenW=greens.map(ev=>ev.w||1), totG=greenW.reduce((a,b)=>a+b,0);
   const redW=reds.map(ev=>ev.loss?0.1:1), totR=redW.reduce((a,b)=>a+b,0);
   const all=[];
   greens.forEach((ev,i)=>all.push({ev, good:true, i, frac:gr*greenW[i]/totG}));
   reds.forEach((ev,i)=>all.push({ev, good:false, i, frac:(1-gr)*redW[i]/totR}));
   const keep=all.filter(s=>!used.includes(s.ev.lb));
-  if(!keep.length) return all;                      // segurança: nunca roda vazia
+  if(!keep.length) return mixSectors(all);          // segurança: nunca roda vazia
   all.filter(s=>used.includes(s.ev.lb)).forEach(gone=>{
     let to=keep.filter(s=>s.good===gone.good && !s.ev.loss);
     if(!to.length) to=keep.filter(s=>!s.ev.loss);
@@ -125,7 +162,7 @@ function wheelSectors(){
     const tot=to.reduce((a,s)=>a+s.frac,0);
     to.forEach(s=>{ s.frac+=gone.frac*s.frac/tot; });
   });
-  return keep;
+  return mixSectors(keep);
 }
 function rollGymEvent(){
   const sec=wheelSectors(); let r=Math.random()*sec.reduce((a,s)=>a+s.frac,0);

@@ -79,9 +79,14 @@ function wheelIconSrc(ev){
 function typeTag(t){ const n=(TYPE_PT[t]||t).normalize('NFD').replace(/[\u0300-\u036f]/g,''); return `<span class="type t-${t}">${n}</span>`; }
 function chain(sp){ const a=[sp]; let c=sp; while(DEX[c] && DEX[c].evo){ c=DEX[c].evo; a.push(c); } return a; }
 function prevEvoLv(sp){ for(const k in DEX){ if(DEX[k].evo===sp && DEX[k].evoLv<99) return DEX[k].evoLv; } return 5; }
-function topThree(){ return G.team.slice().sort((a,b)=>monPower(b)-monPower(a)).slice(0,3); }
-function bestAttacker(t){ return topThree().sort((a,b)=>typeMult(b.t,t)-typeMult(a.t,t) || monPower(b)-monPower(a))[0]; }
 function strongestMon(){ return G.team.slice().sort((a,b)=>monPower(b)-monPower(a))[0] || null; }
+/* o líder da vez (para marcar no time quem tem vantagem de tipo contra ele) */
+function currentFoe(){
+  if(!G) return null;
+  if(G.silver) return REGIONS[REGION].RED || null;
+  if(G.gymIndex<GYMS.length) return GYMS[G.gymIndex];
+  return ELITE[Math.min(G.eliteIndex, ELITE.length-1)];
+}
 
 /* ---------- regras de chance: curva logística (preparo pesa, mas nunca é 0% ou 100%) ---------- */
 function curve(e,f,lo,hi){ if(e<=0) return lo; const p=1/(1+Math.pow(f/e,3.5)); return Math.min(hi,Math.max(lo,p)); }
@@ -198,7 +203,7 @@ function vsBox(foe, ftype, kind){
   const mine=teamPower(), mult=bestMatchup(ftype), eff=Math.round(mine*mult);
   const ch = kind==='elite' ? eliteChance(eff,foe) : gymChance(eff,foe);
   const mx=Math.max(eff,foe,1)*1.08, cls=ch>=0.6?'good':ch>=0.4?'mid':'low';
-  const who=mult!==1 && G.team.length ? ` · ${bestAttacker(ftype).species}` : '';
+  const who='';
   return `<div class="vsbox">
     <div class="vs-row"><span>VOCÊ</span><div class="bar"><i class="me" style="width:${eff/mx*100}%"></i></div><b>${eff}</b></div>
     <div class="vs-row"><span>${kind==='elite'?'LIGA':'LÍDER'}</span><div class="bar"><i class="foe" style="width:${foe/mx*100}%"></i></div><b>${foe}</b></div>
@@ -208,16 +213,17 @@ function pips(){
   for(let i=0;i<STEPS_PER_GYM;i++) h+=`<span class="mini-ball ${i<G.step?'used':''}"></span>`;
   return h+`<span>DECISÕES RESTANTES: ${Math.max(0,STEPS_PER_GYM-G.step)}</span></div>`; }
 /* líder + barras de poder num bloco só (o hub cabe na tela do celular) */
-function foeBlock(av, top, name, sub, badge, power, t, kind){
-  return `<div class="foe-card">${leaderCard(av, top, name, sub, badge)}${vsBox(power, t, kind)}</div>`; }
+function foeBlock(av, top, name, sub, badge, power, t, kind, foe){
+  const tm = foe && foe.team ? `<div class="foe-team" aria-label="Time de ${foe.leader}">${foe.team.map(m=>`<img src="${frontSrc(m.species)}" alt="${m.species}" title="${m.species} Lv${m.lv}"><i>${m.lv}</i>`).join('')}</div>` : '';
+  return `<div class="foe-card">${leaderCard(av, top, name, sub+tm, badge)}${vsBox(power, t, kind)}</div>`; }
 /* faixa com os 6 espaços do time: o time fica visível sem rolar a tela; tocar leva à lista completa */
 function partyStrip(){
   if(!G.team.length) return '';
-  const top=new Set(topThree());
+  const foe=currentFoe();
   let h='';
   for(let i=0;i<6;i++){
-    const m=G.team[i];
-    h += m ? `<span class="ps ${i===0?'lead':''} ${top.has(m)&&G.team.length>3?'top':''}">${front(m)}<b>${m.egg?'OVO':'Lv'+m.lv}</b></span>`
+    const m=G.team[i], mu = m && foe && !m.egg ? typeMult(m.t, foe.t) : 1;
+    h += m ? `<span class="ps ${i===0?'lead':''} ${mu>1?'adv':mu<1?'dis':''}">${front(m)}<b>${m.egg?'OVO':'Lv'+m.lv}</b></span>`
            : `<span class="ps empty"></span>`;
   }
   return `<button class="pstrip" data-act="seeTeam" aria-label="Ver o time completo (${G.team.length} de 6)">${h}</button>`;
@@ -227,7 +233,7 @@ function partyStrip(){
 function partyHTML(diff, opts){
   opts=opts||{};
   if(!G.team.length && !(diff && diff.lost.length)) return "";
-  const top=new Set(topThree());
+  const foe=currentFoe();
   const rows=G.team.map((m,i)=>{
     const d=DEX[m.species], per=diff && diff.per.get(m);
     let tags="";
@@ -257,15 +263,16 @@ function partyHTML(diff, opts){
         ? `<div class="rel-ask">Soltar ${m.species}? <button class="rel yes" data-act="releaseYes" data-arg="${i}">SIM, SOLTAR</button><button class="rel" data-act="releaseNo">NÃO</button></div>`
         : `<button class="rel" data-act="release" data-arg="${i}" aria-label="Soltar ${m.species}">SOLTAR</button>`;
     }
-    return `<div class="mon ${i===0?'lead':''} ${top.has(m)&&G.team.length>3?'top':''}">
+    const mu = foe && !m.egg ? typeMult(m.t, foe.t) : 1, vs = mu>1 ? `<i class="d d-up">×${mu} VS ${foe.leader.toUpperCase()}</i>` : mu<1 ? `<i class="d d-dn">×${mu<0.5?0.5:mu} VS ${foe.leader.toUpperCase()}</i>` : '';
+    return `<div class="mon ${i===0?'lead':''}">
       <div class="sp">${front(m)}</div>
       <div><div class="m-name">${i===0?'<span class="star">★</span> ':''}${m.species}${m.shiny?' <span class="shiny">✨</span>':''}</div>
-        <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${tags}</div>${evo}${rel}</div>
+        <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${tags}${opts.manage?vs:''}</div>${evo}${rel}</div>
       <div class="m-pow">PODER<b>${monPower(m)}</b></div></div>`;
   }).join("");
   const lost=diff ? diff.lost.map(l=>`<div class="mon lost"><div class="sp">${front(l)}</div><div><div class="m-name">${l.species}</div><div class="m-sub"><i class="d d-dn">PERDIDO</i></div></div><div></div></div>`).join("") : "";
-  const hint = opts.manage && G.team.length>1 ? ' Solte quem não ajuda pra liberar espaço (não gasta decisão; o inicial fica).' : '';
-  return `<div class="party-h" id="party">SEU TIME (${G.team.length}/6)<small>O poder vem dos 3 mais fortes${G.team.length>3?' — marcados com TOP3':''}. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
+  const hint = opts.manage && G.team.length>1 ? ' Todo Pokémon soma, então só solte alguém pra abrir espaço pra um mais forte (não gasta decisão; o inicial fica).' : '';
+  return `<div class="party-h" id="party">SEU TIME (${G.team.length}/6)<small>O poder é a soma do time inteiro, e cada um conta com a vantagem de tipo dele contra o líder. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
 }
 
 /* =====================================================================
@@ -316,7 +323,7 @@ function how(){
     ['🎲','ROLETA','Eventos temáticos de cada região. Verde é sorte, vermelho é perigo. A sorte cai de 70% no começo para 35% na reta final.'],
     ['🏋️','TREINAR','+2 níveis no time inteiro. Seguro, mas rende menos que a roleta na média.'],
     ['🔎','PROCURAR','Captura garantida de um Pokémon selvagem. Ótimo para cobrir tipos.'],
-    ['⚔️','TIPOS','Seu melhor atacante contra o tipo do líder define o multiplicador: ×2 com vantagem, ×0.5 com desvantagem.'],
+    ['⚔️','PODER E TIPOS','Seu poder é a soma do time inteiro, e o do líder é a soma do time dele. Cada Pokémon seu conta ×2 se tem vantagem contra o tipo do líder e ×0.5 se tem desvantagem.'],
     ['🛤️','VICTORY ROAD','Depois das 8 insígnias, mais 3 decisões com eventos próprios da caverna (Moltres mora lá) antes de 5 batalhas seguidas na Liga.'],
     ['🎰','RODA SEM REPETIÇÃO','O evento que sai some da roda até o próximo ginásio. A chance de perder Pokémon continua rara.'],
     ['💾','SALVA SOZINHO','A carreira é salva a cada passo. Fechou a aba? É só tocar em CONTINUAR.'],
@@ -363,7 +370,7 @@ function hub(){
   const tw = can ? `Suas 3 decisões acabaram. ${g.leader} te espera no Ginásio de ${city}!`
                  : `Rumo a ${city}. Faltam ${STEPS_PER_GYM-G.step} decisões antes de enfrentar ${g.leader}. O que você faz?`;
   scene(`<div class="ribbon info">ROTA → ${city.toUpperCase()} · GINÁSIO ${g.n}/8</div>
-    ${foeBlock(leaderImg(g),'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${badgeImg(g.n-1)}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`, g.power, g.t, 'gym')}
+    ${foeBlock(leaderImg(g),'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${badgeImg(g.n-1)}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`, g.power, g.t, 'gym', g)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('challenge',`⚔️ DESAFIAR ${g.leader.toUpperCase()}`,'Perdeu, acabou a carreira',{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, 'hubs', tw);
@@ -373,7 +380,7 @@ function hubVR(){
   const tw = can ? 'A Victory Road ficou para trás. As portas do Platô Índigo se abrem...'
                  : `Victory Road: a última estrada antes da Liga. Depois daqui são 5 batalhas seguidas, sem voltar. Faltam ${STEPS_PER_GYM-G.step} decisões.`;
   scene(`<div class="ribbon info">🛤️ VICTORY ROAD → PLATÔ ÍNDIGO</div>
-    ${foeBlock(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`, e.power, e.t, 'elite')}
+    ${foeBlock(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`, e.power, e.t, 'elite', e)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('league','🏛️ ENTRAR NO PLATÔ ÍNDIGO','Sem volta a partir daqui',{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, 'hubs', tw);
@@ -565,7 +572,8 @@ function runBattle(me){
   });
   /* 2) o contra-ataque */
   T(3300,()=>{
-    say(`${b.foe.leader} contra-ataca com ${TYPE_MOVE[b.foe.t]||'Investida'}!${eff(foeMult)}`);
+    const ace=foeAce(b.foe), mv=TYPE_MOVE[ace?ace.t:b.foe.t]||'Investida';
+    say(ace ? `${b.foe.leader} manda ${ace.species}! ${ace.species} usou ${mv}!${eff(typeMult(ace.t, me.t))}` : `${b.foe.leader} contra-ataca com ${mv}!${eff(foeMult)}`);
     setBar(document.getElementById('hpM'), b.win ? left : Math.max(8,left-30));
     shake('avM'); try{ SFX.hit(); }catch(e){}
   });
@@ -622,7 +630,7 @@ function winScreen(){
 function eliteScreen(){
   const e=ELITE[G.eliteIndex], champ=G.eliteIndex===ELITE.length-1;
   scene(`<div class="ribbon ${champ?'gold':'info'}">${champ?'🏆 SALA DO CAMPEÃO':'🏛️ PLATÔ ÍNDIGO · ELITE FOUR'}</div>${e4Strip()}
-    ${foeBlock(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`, e.power, e.t, 'elite')}
+    ${foeBlock(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`, e.power, e.t, 'elite', e)}
     ${partyStrip()}<div class="dialog" id="tw"></div>
     ${menu(btn('fight',`⚔️ ENFRENTAR ${e.leader.toUpperCase()}`,'Derrota aqui encerra a carreira',{primary:true}))}${partyHTML()}`, 'hubs',
     champ ? (RT.champIntro||'A última porta. Do outro lado, seu antigo Rival, agora Campeão, sorri.\n"Sabia que você viria."') : `${e.leader} te espera. Cinco batalhas seguidas, sem voltar para a estrada.`);

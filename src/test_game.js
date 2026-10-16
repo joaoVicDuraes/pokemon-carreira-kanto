@@ -139,7 +139,7 @@ for(const pol of Object.keys(POL)){
  // batalha: falas de golpe por tipo
  const said=[]; ctx.__said=said; R('typewrite=(el,h)=>this.__said.push(h)');
  X.G.step=3; act('back'); act('challenge');
- ok(said.some(s=>/usou /.test(s)) && said.some(s=>/contra-ataca/.test(s)),'falas de golpe na batalha: '+said.slice(0,4).join(' | '));
+ ok(said.some(s=>/usou /.test(s)) && said.some(s=>/manda .+ usou /.test(s)),'falas de golpe na batalha: '+said.slice(0,4).join(' | '));
 }
 console.log(fails?`${fails} FALHA(S)`:'TUDO OK');
 process.exit(fails?1:0);

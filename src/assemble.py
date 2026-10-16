@@ -29,9 +29,13 @@ A = re.sub(r"function newGame\(\)\{.*?\n",
     'stats:{caught:0,evolved:0,wins:0,eventsGood:0,eventsBad:0,stolen:0,fled:0,shinies:0}};}\n', A, count=1, flags=re.S)
 assert 'phase:"title"' in A
 A = sub1(A, "return best||1;", "return G.team.length?Math.max(0.5,best):1; /* imunidade vira 0.5: ainda há golpes de cobertura */", "bestMatchup")
-# curva de dificuldade calibrada por simulação (sim_full/tune)
-GYM_POW = [22, 50, 78, 102, 128, 152, 176, 200]
-ELITE_POW = [225, 245, 265, 285, 310]
+# regra nova: poder = soma do time inteiro (teamPower/bestMatchup agora vivem em gen2_engine.js)
+A, n1 = re.subn(r"/\* melhor efetividade do time.*?\nfunction bestMatchup\(leaderType\)\{.*?\n\}\n", "", A, count=1, flags=re.S)
+A, n2 = re.subn(r"function teamPower\(\)\{.*?\}\n", "", A, count=1)
+assert n1 == 1 and n2 == 1, ("regra antiga de poder não encontrada", n1, n2)
+# poder-alvo dos líderes (regra "soma do time inteiro"), calibrado por simulação para manter a chance de cada batalha
+GYM_POW = [18, 60, 110, 128, 173, 240, 253, 347]
+ELITE_POW = [428, 432, 436, 440, 473]
 gi = A.index("const GYMS="); ge = A.index("const ELITE=")
 gblock = A[gi:ge]; it = iter(GYM_POW)
 gblock2 = re.sub(r"power:\d+", lambda m: "power:%d" % next(it), gblock)

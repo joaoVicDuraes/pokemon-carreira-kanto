@@ -453,7 +453,11 @@ body[data-region=johto] .starters{gap:10px}
 .ps .emo{font-size:26px;line-height:44px}
 .ps b{font-family:'PS2P';font-size:6px;color:var(--ink)}
 .ps.lead{background:#ffe1d3}
-.ps.top::after{content:'';position:absolute;top:2px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 1.5px var(--k)}
+.ps.adv::after,.ps.dis::after{position:absolute;top:1px;right:2px;font-family:'PS2P';font-size:6px;line-height:1;padding:2px 2px 1px;border-radius:3px;color:#fff;box-shadow:0 0 0 1.5px var(--k)}
+.ps.adv::after{content:'▲';background:var(--ok)}.ps.dis::after{content:'▼';background:var(--red)}
+.foe-team{display:flex;gap:2px;margin-top:3px;flex-wrap:wrap}
+.foe-team img{width:26px;height:26px;image-rendering:pixelated}
+.foe-team i{font-style:normal;font-family:'PS2P';font-size:5px;color:#888;align-self:flex-end;margin:0 4px 2px -2px}
 .ps.empty{border:2px dashed #9fb3d8;background:transparent;min-height:40px}
 .scene.hubs .dialog{min-height:0;margin:8px 0 4px}
 .menu.split{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -782,29 +786,22 @@ let TYPE_CHART = {
   normal:  {rock:.5, ghost:0},
 };
 function typeMult(atk,def){const row=TYPE_CHART[atk];if(!row)return 1;const v=row[def];return v===undefined?1:v;}
-/* melhor efetividade do time contra o tipo do líder (usa os 3 pokémon mais fortes) */
-function bestMatchup(leaderType){
-  if(!G.team.length)return 1;
-  const top=G.team.slice().sort((a,b)=>monPower(b)-monPower(a)).slice(0,3);
-  let best=0;top.forEach(m=>{const v=typeMult(m.t,leaderType);if(v>best)best=v;});
-  return G.team.length?Math.max(0.5,best):1; /* imunidade vira 0.5: ainda há golpes de cobertura */
-}
 let GYMS=[
-  {n:1,leader:"Brock",t:"rock",e:"🪨",b:"🥌",power:22},
-  {n:2,leader:"Misty",t:"water",e:"💧",b:"💧",power:50},
-  {n:3,leader:"Lt. Surge",t:"electric",e:"⚡",b:"⚡",power:78},
-  {n:4,leader:"Erika",t:"grass",e:"🌸",b:"🌈",power:102},
-  {n:5,leader:"Koga",t:"poison",e:"☠️",b:"🕸️",power:128},
-  {n:6,leader:"Sabrina",t:"psychic",e:"🔮",b:"🧠",power:152},
-  {n:7,leader:"Blaine",t:"fire",e:"🌋",b:"🔥",power:176},
-  {n:8,leader:"Giovanni",t:"ground",e:"👑",b:"🏆",power:200},
+  {n:1,leader:"Brock",t:"rock",e:"🪨",b:"🥌",power:18},
+  {n:2,leader:"Misty",t:"water",e:"💧",b:"💧",power:60},
+  {n:3,leader:"Lt. Surge",t:"electric",e:"⚡",b:"⚡",power:110},
+  {n:4,leader:"Erika",t:"grass",e:"🌸",b:"🌈",power:128},
+  {n:5,leader:"Koga",t:"poison",e:"☠️",b:"🕸️",power:173},
+  {n:6,leader:"Sabrina",t:"psychic",e:"🔮",b:"🧠",power:240},
+  {n:7,leader:"Blaine",t:"fire",e:"🌋",b:"🔥",power:253},
+  {n:8,leader:"Giovanni",t:"ground",e:"👑",b:"🏆",power:347},
 ];
 let ELITE=[
-  {leader:"Lorelei",t:"ice",e:"❄️",power:225},
-  {leader:"Bruno",t:"fighting",e:"🥋",power:245},
-  {leader:"Agatha",t:"ghost",e:"👻",power:265},
-  {leader:"Lance",t:"dragon",e:"🐉",power:285},
-  {leader:"Rival (Champion)",t:"dragon",e:"👑",power:310},
+  {leader:"Lorelei",t:"ice",e:"❄️",power:428},
+  {leader:"Bruno",t:"fighting",e:"🥋",power:432},
+  {leader:"Agatha",t:"ghost",e:"👻",power:436},
+  {leader:"Lance",t:"dragon",e:"🐉",power:440},
+  {leader:"Rival (Champion)",t:"dragon",e:"👑",power:473},
 ];
 const STEPS_PER_GYM=3;
 
@@ -812,7 +809,6 @@ let G=null;
 function newGame(){return{phase:"title",team:[],gymIndex:0,eliteIndex:0,step:0,day:1,starter:null,vrDone:false,recorded:false,newRecord:false,pendingRocketGameOver:false,battle:null,lastResult:null,lastWin:null,log:[],stats:{caught:0,evolved:0,wins:0,eventsGood:0,eventsBad:0,stolen:0,fled:0,shinies:0}};}
 function mon(species,lv){const d=DEX[species];return{species,lv:lv||5,t:d.t,e:d.e};}
 function monPower(m){const d=DEX[m.species];return Math.round(d.base+(m.lv-5)*1.6);}
-function teamPower(){return G.team.map(monPower).sort((a,b)=>b-a).slice(0,3).reduce((a,b)=>a+b,0);}
 
 
 /* ============ EVENTOS POR GINÁSIO ============
@@ -1119,6 +1115,25 @@ function rollGymEvent(){
   const s=sec[sec.length-1]; return {ev:s.ev, good:s.good};
 }
 
+/* ---------- times dos líderes de Kanto (FireRed/LeafGreen) ----------
+   Os níveis são ajustados por assignFoeTeams até a soma bater no poder calibrado. */
+const KANTO_TEAMS = {
+  "Brock":[["Geodude",12],["Onix",14]],
+  "Misty":[["Staryu",18],["Starmie",21]],
+  "Lt. Surge":[["Voltorb",21],["Pikachu",18],["Raichu",24]],
+  "Erika":[["Victreebel",29],["Tangela",24],["Vileplume",29]],
+  "Koga":[["Koffing",37],["Muk",39],["Koffing",37],["Weezing",43]],
+  "Sabrina":[["Kadabra",38],["Mr. Mime",37],["Venomoth",38],["Alakazam",43]],
+  "Blaine":[["Growlithe",42],["Ponyta",40],["Rapidash",42],["Arcanine",47]],
+  "Giovanni":[["Rhyhorn",45],["Dugtrio",42],["Nidoqueen",44],["Nidoking",45],["Rhydon",50]],
+  "Lorelei":[["Dewgong",52],["Cloyster",51],["Slowbro",52],["Jynx",54],["Lapras",54]],
+  "Bruno":[["Onix",51],["Hitmonchan",53],["Hitmonlee",53],["Onix",54],["Machamp",56]],
+  "Agatha":[["Gengar",54],["Golbat",54],["Haunter",53],["Arbok",56],["Gengar",58]],
+  "Lance":[["Gyarados",56],["Dragonair",54],["Dragonair",54],["Aerodactyl",58],["Dragonite",60]],
+  "Rival (Champion)":[["Pidgeot",59],["Alakazam",57],["Rhydon",59],["Gyarados",59],["Arcanine",59],["Exeggutor",61]],
+};
+assignFoeTeams(GYMS.concat(ELITE), KANTO_TEAMS);
+
 /* =====================================================================
    INTERFACE v2 — visual estilo GBA (FireRed/LeafGreen)
    ===================================================================== */
@@ -1200,9 +1215,14 @@ function wheelIconSrc(ev){
 function typeTag(t){ const n=(TYPE_PT[t]||t).normalize('NFD').replace(/[\u0300-\u036f]/g,''); return `<span class="type t-${t}">${n}</span>`; }
 function chain(sp){ const a=[sp]; let c=sp; while(DEX[c] && DEX[c].evo){ c=DEX[c].evo; a.push(c); } return a; }
 function prevEvoLv(sp){ for(const k in DEX){ if(DEX[k].evo===sp && DEX[k].evoLv<99) return DEX[k].evoLv; } return 5; }
-function topThree(){ return G.team.slice().sort((a,b)=>monPower(b)-monPower(a)).slice(0,3); }
-function bestAttacker(t){ return topThree().sort((a,b)=>typeMult(b.t,t)-typeMult(a.t,t) || monPower(b)-monPower(a))[0]; }
 function strongestMon(){ return G.team.slice().sort((a,b)=>monPower(b)-monPower(a))[0] || null; }
+/* o líder da vez (para marcar no time quem tem vantagem de tipo contra ele) */
+function currentFoe(){
+  if(!G) return null;
+  if(G.silver) return REGIONS[REGION].RED || null;
+  if(G.gymIndex<GYMS.length) return GYMS[G.gymIndex];
+  return ELITE[Math.min(G.eliteIndex, ELITE.length-1)];
+}
 
 /* ---------- regras de chance: curva logística (preparo pesa, mas nunca é 0% ou 100%) ---------- */
 function curve(e,f,lo,hi){ if(e<=0) return lo; const p=1/(1+Math.pow(f/e,3.5)); return Math.min(hi,Math.max(lo,p)); }
@@ -1319,7 +1339,7 @@ function vsBox(foe, ftype, kind){
   const mine=teamPower(), mult=bestMatchup(ftype), eff=Math.round(mine*mult);
   const ch = kind==='elite' ? eliteChance(eff,foe) : gymChance(eff,foe);
   const mx=Math.max(eff,foe,1)*1.08, cls=ch>=0.6?'good':ch>=0.4?'mid':'low';
-  const who=mult!==1 && G.team.length ? ` · ${bestAttacker(ftype).species}` : '';
+  const who='';
   return `<div class="vsbox">
     <div class="vs-row"><span>VOCÊ</span><div class="bar"><i class="me" style="width:${eff/mx*100}%"></i></div><b>${eff}</b></div>
     <div class="vs-row"><span>${kind==='elite'?'LIGA':'LÍDER'}</span><div class="bar"><i class="foe" style="width:${foe/mx*100}%"></i></div><b>${foe}</b></div>
@@ -1329,16 +1349,17 @@ function pips(){
   for(let i=0;i<STEPS_PER_GYM;i++) h+=`<span class="mini-ball ${i<G.step?'used':''}"></span>`;
   return h+`<span>DECISÕES RESTANTES: ${Math.max(0,STEPS_PER_GYM-G.step)}</span></div>`; }
 /* líder + barras de poder num bloco só (o hub cabe na tela do celular) */
-function foeBlock(av, top, name, sub, badge, power, t, kind){
-  return `<div class="foe-card">${leaderCard(av, top, name, sub, badge)}${vsBox(power, t, kind)}</div>`; }
+function foeBlock(av, top, name, sub, badge, power, t, kind, foe){
+  const tm = foe && foe.team ? `<div class="foe-team" aria-label="Time de ${foe.leader}">${foe.team.map(m=>`<img src="${frontSrc(m.species)}" alt="${m.species}" title="${m.species} Lv${m.lv}"><i>${m.lv}</i>`).join('')}</div>` : '';
+  return `<div class="foe-card">${leaderCard(av, top, name, sub+tm, badge)}${vsBox(power, t, kind)}</div>`; }
 /* faixa com os 6 espaços do time: o time fica visível sem rolar a tela; tocar leva à lista completa */
 function partyStrip(){
   if(!G.team.length) return '';
-  const top=new Set(topThree());
+  const foe=currentFoe();
   let h='';
   for(let i=0;i<6;i++){
-    const m=G.team[i];
-    h += m ? `<span class="ps ${i===0?'lead':''} ${top.has(m)&&G.team.length>3?'top':''}">${front(m)}<b>${m.egg?'OVO':'Lv'+m.lv}</b></span>`
+    const m=G.team[i], mu = m && foe && !m.egg ? typeMult(m.t, foe.t) : 1;
+    h += m ? `<span class="ps ${i===0?'lead':''} ${mu>1?'adv':mu<1?'dis':''}">${front(m)}<b>${m.egg?'OVO':'Lv'+m.lv}</b></span>`
            : `<span class="ps empty"></span>`;
   }
   return `<button class="pstrip" data-act="seeTeam" aria-label="Ver o time completo (${G.team.length} de 6)">${h}</button>`;
@@ -1348,7 +1369,7 @@ function partyStrip(){
 function partyHTML(diff, opts){
   opts=opts||{};
   if(!G.team.length && !(diff && diff.lost.length)) return "";
-  const top=new Set(topThree());
+  const foe=currentFoe();
   const rows=G.team.map((m,i)=>{
     const d=DEX[m.species], per=diff && diff.per.get(m);
     let tags="";
@@ -1378,15 +1399,16 @@ function partyHTML(diff, opts){
         ? `<div class="rel-ask">Soltar ${m.species}? <button class="rel yes" data-act="releaseYes" data-arg="${i}">SIM, SOLTAR</button><button class="rel" data-act="releaseNo">NÃO</button></div>`
         : `<button class="rel" data-act="release" data-arg="${i}" aria-label="Soltar ${m.species}">SOLTAR</button>`;
     }
-    return `<div class="mon ${i===0?'lead':''} ${top.has(m)&&G.team.length>3?'top':''}">
+    const mu = foe && !m.egg ? typeMult(m.t, foe.t) : 1, vs = mu>1 ? `<i class="d d-up">×${mu} VS ${foe.leader.toUpperCase()}</i>` : mu<1 ? `<i class="d d-dn">×${mu<0.5?0.5:mu} VS ${foe.leader.toUpperCase()}</i>` : '';
+    return `<div class="mon ${i===0?'lead':''}">
       <div class="sp">${front(m)}</div>
       <div><div class="m-name">${i===0?'<span class="star">★</span> ':''}${m.species}${m.shiny?' <span class="shiny">✨</span>':''}</div>
-        <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${tags}</div>${evo}${rel}</div>
+        <div class="m-sub">${typeTag(m.t)}<span class="m-lv">Lv${m.lv}</span>${tags}${opts.manage?vs:''}</div>${evo}${rel}</div>
       <div class="m-pow">PODER<b>${monPower(m)}</b></div></div>`;
   }).join("");
   const lost=diff ? diff.lost.map(l=>`<div class="mon lost"><div class="sp">${front(l)}</div><div><div class="m-name">${l.species}</div><div class="m-sub"><i class="d d-dn">PERDIDO</i></div></div><div></div></div>`).join("") : "";
-  const hint = opts.manage && G.team.length>1 ? ' Solte quem não ajuda pra liberar espaço (não gasta decisão; o inicial fica).' : '';
-  return `<div class="party-h" id="party">SEU TIME (${G.team.length}/6)<small>O poder vem dos 3 mais fortes${G.team.length>3?' — marcados com TOP3':''}. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
+  const hint = opts.manage && G.team.length>1 ? ' Todo Pokémon soma, então só solte alguém pra abrir espaço pra um mais forte (não gasta decisão; o inicial fica).' : '';
+  return `<div class="party-h" id="party">SEU TIME (${G.team.length}/6)<small>O poder é a soma do time inteiro, e cada um conta com a vantagem de tipo dele contra o líder. ★ = seu inicial.${hint}</small></div><div class="party">${rows}${lost}</div>`;
 }
 
 /* =====================================================================
@@ -1437,7 +1459,7 @@ function how(){
     ['🎲','ROLETA','Eventos temáticos de cada região. Verde é sorte, vermelho é perigo. A sorte cai de 70% no começo para 35% na reta final.'],
     ['🏋️','TREINAR','+2 níveis no time inteiro. Seguro, mas rende menos que a roleta na média.'],
     ['🔎','PROCURAR','Captura garantida de um Pokémon selvagem. Ótimo para cobrir tipos.'],
-    ['⚔️','TIPOS','Seu melhor atacante contra o tipo do líder define o multiplicador: ×2 com vantagem, ×0.5 com desvantagem.'],
+    ['⚔️','PODER E TIPOS','Seu poder é a soma do time inteiro, e o do líder é a soma do time dele. Cada Pokémon seu conta ×2 se tem vantagem contra o tipo do líder e ×0.5 se tem desvantagem.'],
     ['🛤️','VICTORY ROAD','Depois das 8 insígnias, mais 3 decisões com eventos próprios da caverna (Moltres mora lá) antes de 5 batalhas seguidas na Liga.'],
     ['🎰','RODA SEM REPETIÇÃO','O evento que sai some da roda até o próximo ginásio. A chance de perder Pokémon continua rara.'],
     ['💾','SALVA SOZINHO','A carreira é salva a cada passo. Fechou a aba? É só tocar em CONTINUAR.'],
@@ -1484,7 +1506,7 @@ function hub(){
   const tw = can ? `Suas 3 decisões acabaram. ${g.leader} te espera no Ginásio de ${city}!`
                  : `Rumo a ${city}. Faltam ${STEPS_PER_GYM-G.step} decisões antes de enfrentar ${g.leader}. O que você faz?`;
   scene(`<div class="ribbon info">ROTA → ${city.toUpperCase()} · GINÁSIO ${g.n}/8</div>
-    ${foeBlock(leaderImg(g),'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${badgeImg(g.n-1)}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`, g.power, g.t, 'gym')}
+    ${foeBlock(leaderImg(g),'LÍDER DE GINÁSIO',g.leader,`${typeTag(g.t)} Poder ${g.power}`,`${badgeImg(g.n-1)}<small>${BADGE_NAMES[g.n-1].replace('Insígnia ','').toUpperCase()}</small>`, g.power, g.t, 'gym', g)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('challenge',`⚔️ DESAFIAR ${g.leader.toUpperCase()}`,'Perdeu, acabou a carreira',{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, 'hubs', tw);
@@ -1494,7 +1516,7 @@ function hubVR(){
   const tw = can ? 'A Victory Road ficou para trás. As portas do Platô Índigo se abrem...'
                  : `Victory Road: a última estrada antes da Liga. Depois daqui são 5 batalhas seguidas, sem voltar. Faltam ${STEPS_PER_GYM-G.step} decisões.`;
   scene(`<div class="ribbon info">🛤️ VICTORY ROAD → PLATÔ ÍNDIGO</div>
-    ${foeBlock(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`, e.power, e.t, 'elite')}
+    ${foeBlock(leaderImg(e),'PRIMEIRA DA ELITE FOUR',e.leader,`${typeTag(e.t)} Poder ${e.power}`,`🏛️<small>LIGA</small>`, e.power, e.t, 'elite', e)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn('league','🏛️ ENTRAR NO PLATÔ ÍNDIGO','Sem volta a partir daqui',{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, 'hubs', tw);
@@ -1686,7 +1708,8 @@ function runBattle(me){
   });
   /* 2) o contra-ataque */
   T(3300,()=>{
-    say(`${b.foe.leader} contra-ataca com ${TYPE_MOVE[b.foe.t]||'Investida'}!${eff(foeMult)}`);
+    const ace=foeAce(b.foe), mv=TYPE_MOVE[ace?ace.t:b.foe.t]||'Investida';
+    say(ace ? `${b.foe.leader} manda ${ace.species}! ${ace.species} usou ${mv}!${eff(typeMult(ace.t, me.t))}` : `${b.foe.leader} contra-ataca com ${mv}!${eff(foeMult)}`);
     setBar(document.getElementById('hpM'), b.win ? left : Math.max(8,left-30));
     shake('avM'); try{ SFX.hit(); }catch(e){}
   });
@@ -1743,7 +1766,7 @@ function winScreen(){
 function eliteScreen(){
   const e=ELITE[G.eliteIndex], champ=G.eliteIndex===ELITE.length-1;
   scene(`<div class="ribbon ${champ?'gold':'info'}">${champ?'🏆 SALA DO CAMPEÃO':'🏛️ PLATÔ ÍNDIGO · ELITE FOUR'}</div>${e4Strip()}
-    ${foeBlock(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`, e.power, e.t, 'elite')}
+    ${foeBlock(leaderImg(e), champ?'CAMPEÃO DA LIGA':`ELITE FOUR · ${G.eliteIndex+1}/4`, e.leader, `${typeTag(e.t)} Poder ${e.power}`, `${G.eliteIndex+1}<small>DE 5</small>`, e.power, e.t, 'elite', e)}
     ${partyStrip()}<div class="dialog" id="tw"></div>
     ${menu(btn('fight',`⚔️ ENFRENTAR ${e.leader.toUpperCase()}`,'Derrota aqui encerra a carreira',{primary:true}))}${partyHTML()}`, 'hubs',
     champ ? (RT.champIntro||'A última porta. Do outro lado, seu antigo Rival, agora Campeão, sorri.\n"Sabia que você viria."') : `${e.leader} te espera. Cinco batalhas seguidas, sem voltar para a estrada.`);
@@ -2120,6 +2143,35 @@ document.addEventListener("pointerdown", ()=>SFX.unlock(), {passive:true});
    ===================================================================== */
 const FR_MAX = 5;   // decisões (bons eventos contam em dobro) para a amizade evoluir
 function monPower(m){ if(m.egg) return 0; const d=DEX[m.species]; return Math.round(d.base+(m.lv-5)*1.6); }
+
+/* ---------- PODER = SOMA DO TIME INTEIRO ----------
+   Cada Pokémon entra com o próprio poder × a vantagem de tipo DELE contra o líder
+   (imunidade conta como ×0.5: ainda há golpes de cobertura). O líder também é a soma do time dele. */
+function monEff(m, t){ if(m.egg) return 0; const v=typeMult(m.t, t); return monPower(m)*(v<0.5?0.5:v); }
+function teamPower(){ return G.team.reduce((a,m)=>a+monPower(m), 0); }
+function teamEff(t){ return Math.round(G.team.reduce((a,m)=>a+monEff(m,t), 0)); }
+/* multiplicador médio do time contra o tipo (mantém o nome antigo: o resto do jogo usa poder × mult) */
+function bestMatchup(t){ const p=teamPower(); return p ? Math.round(teamEff(t)/p*100)/100 : 1; }
+/* quem mais contribui contra esse tipo: vai à frente na batalha */
+function bestAttacker(t){ return G.team.filter(m=>!m.egg).sort((a,b)=>monEff(b,t)-monEff(a,t))[0] || G.team[0]; }
+/* times dos líderes: os Pokémon dos jogos originais. Os níveis sobem ou descem juntos até a soma
+   chegar no poder calibrado por simulação (o `power` do dado é o alvo; depois vira a soma real). */
+function assignFoeTeams(foes, teams, dex){
+  dex=dex||DEX;
+  const pw=(s,lv)=>Math.round(dex[s].base+(lv-5)*1.6);   // mesma conta do monPower, com a Pokédex da região
+  foes.forEach(f=>{
+    let roster=teams[f.leader]; if(!roster) return;
+    const target=f.power;
+    /* 1º líder: se nem no Lv 5 o time cabe no poder-alvo, ele usa só os mais fortes (o Falkner fica só com o Pidgeotto) */
+    while(roster.length>1 && roster.reduce((a,[s])=>a+pw(s,5),0)>target) roster=roster.slice(1);
+    const base=roster.reduce((a,[s,lv])=>a+pw(s,lv), 0);
+    const shift=Math.round((target-base)/(1.6*roster.length));
+    f.roster=roster;
+    f.team=roster.map(([s,lv])=>({species:s, lv:Math.max(5, lv+shift), t:dex[s].t}));
+    f.power=f.team.reduce((a,m)=>a+pw(m.species,m.lv), 0);
+  });
+}
+function foeAce(f){ return f.team && f.team.length ? f.team.slice().sort((a,b)=>monPower(b)-monPower(a))[0] : null; }
 const TIME_IC = ["☀️","🌇","🌙"], TIME_PT = ["MANHÃ","TARDE","NOITE"];
 function timeIdx(){ return Math.min(G.step, 2); }
 
@@ -2164,7 +2216,7 @@ function hubSilver(){
   const tw = can ? "O topo do Mt. Silver. Um treinador de boné vermelho está parado na neve. Ele não diz nada."
                  : `Mt. Silver: a montanha mais perigosa do mundo. Faltam ${STEPS_PER_GYM-G.step} decisões até o topo.`;
   scene(`<div class="ribbon plate"><span class="spk">✦</span>🏔️ MT. SILVER<span class="spk">✦</span></div>
-    ${foeBlock(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>", R.power, R.t, "elite")}
+    ${foeBlock(leaderImg(R),"A LENDA DO MT. SILVER",R.leader,`${typeTag(R.t)} Poder ${R.power}`,"🧢<small>LENDA</small>", R.power, R.t, "elite", R)}
     ${pips()}${partyStrip()}<div class="dialog" id="tw"></div>
     ${can ? menu(btn("fightRed","⚔️ ENFRENTAR O RED","Perder não tira seu título de Campeão",{primary:true})) : decisionMenu()}
     ${partyHTML(null,{manage:true})}`, "hubs", tw);
@@ -2184,7 +2236,7 @@ function legendScreen(){
     '...\nO Red abaixa o boné, sorri pela primeira vez e desaparece na neve.\nVocê é a nova lenda do Mt. Silver!');
 }
 
-window.BUILD_ID="acd260c0";
+window.BUILD_ID="7d3baf75";
 /* =====================================================================
    REGIÕES: um motor, vários pacotes de dados.
    Kanto vem embutido no index.html; as outras regiões são pacotes <id>.js baixados quando o

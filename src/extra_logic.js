@@ -132,3 +132,22 @@ function rollGymEvent(){
   for(const s of sec){ r-=s.frac; if(r<=0) return {ev:s.ev, good:s.good}; }
   const s=sec[sec.length-1]; return {ev:s.ev, good:s.good};
 }
+
+/* ---------- times dos líderes de Kanto (FireRed/LeafGreen) ----------
+   Os níveis são ajustados por assignFoeTeams até a soma bater no poder calibrado. */
+const KANTO_TEAMS = {
+  "Brock":[["Geodude",12],["Onix",14]],
+  "Misty":[["Staryu",18],["Starmie",21]],
+  "Lt. Surge":[["Voltorb",21],["Pikachu",18],["Raichu",24]],
+  "Erika":[["Victreebel",29],["Tangela",24],["Vileplume",29]],
+  "Koga":[["Koffing",37],["Muk",39],["Koffing",37],["Weezing",43]],
+  "Sabrina":[["Kadabra",38],["Mr. Mime",37],["Venomoth",38],["Alakazam",43]],
+  "Blaine":[["Growlithe",42],["Ponyta",40],["Rapidash",42],["Arcanine",47]],
+  "Giovanni":[["Rhyhorn",45],["Dugtrio",42],["Nidoqueen",44],["Nidoking",45],["Rhydon",50]],
+  "Lorelei":[["Dewgong",52],["Cloyster",51],["Slowbro",52],["Jynx",54],["Lapras",54]],
+  "Bruno":[["Onix",51],["Hitmonchan",53],["Hitmonlee",53],["Onix",54],["Machamp",56]],
+  "Agatha":[["Gengar",54],["Golbat",54],["Haunter",53],["Arbok",56],["Gengar",58]],
+  "Lance":[["Gyarados",56],["Dragonair",54],["Dragonair",54],["Aerodactyl",58],["Dragonite",60]],
+  "Rival (Champion)":[["Pidgeot",59],["Alakazam",57],["Rhydon",59],["Gyarados",59],["Arcanine",59],["Exeggutor",61]],
+};
+assignFoeTeams(GYMS.concat(ELITE), KANTO_TEAMS);

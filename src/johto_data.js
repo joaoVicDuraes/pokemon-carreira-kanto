@@ -96,21 +96,21 @@ const TYPE_CHART = {
 };
 
 const GYMS = [
-  {n:1,leader:"Falkner",t:"flying",e:"🪶",b:"🪶",power:13},
-  {n:2,leader:"Bugsy",t:"bug",e:"🐛",b:"🐞",power:40},
-  {n:3,leader:"Whitney",t:"normal",e:"🐄",b:"⚪",power:58},
-  {n:4,leader:"Morty",t:"ghost",e:"👻",b:"🌫️",power:86},
-  {n:5,leader:"Chuck",t:"fighting",e:"🥊",b:"🌊",power:112},
-  {n:6,leader:"Jasmine",t:"steel",e:"⚙️",b:"🔩",power:138},
-  {n:7,leader:"Pryce",t:"ice",e:"🧊",b:"❄️",power:164},
-  {n:8,leader:"Clair",t:"dragon",e:"🐉",b:"🐲",power:188},
+  {n:1,leader:"Falkner",t:"flying",e:"🪶",b:"🪶",power:9},
+  {n:2,leader:"Bugsy",t:"bug",e:"🐛",b:"🐞",power:55},
+  {n:3,leader:"Whitney",t:"normal",e:"🐄",b:"⚪",power:87},
+  {n:4,leader:"Morty",t:"ghost",e:"👻",b:"🌫️",power:121},
+  {n:5,leader:"Chuck",t:"fighting",e:"🥊",b:"🌊",power:152},
+  {n:6,leader:"Jasmine",t:"steel",e:"⚙️",b:"🔩",power:210},
+  {n:7,leader:"Pryce",t:"ice",e:"🧊",b:"❄️",power:317},
+  {n:8,leader:"Clair",t:"dragon",e:"🐉",b:"🐲",power:321},
 ];
 const ELITE = [
-  {leader:"Will",t:"psychic",e:"🔮",power:215},
-  {leader:"Koga",t:"poison",e:"☠️",power:235},
-  {leader:"Bruno",t:"fighting",e:"🥊",power:255},
-  {leader:"Karen",t:"dark",e:"🌑",power:275},
-  {leader:"Lance",t:"dragon",e:"🐉",power:300},
+  {leader:"Will",t:"psychic",e:"🔮",power:365},
+  {leader:"Koga",t:"poison",e:"☠️",power:369},
+  {leader:"Bruno",t:"fighting",e:"🥊",power:413},
+  {leader:"Karen",t:"dark",e:"🌑",power:477},
+  {leader:"Lance",t:"dragon",e:"🐉",power:481},
 ];
 const STARTERS = ["Chikorita","Cyndaquil","Totodile"];
 const SPECIAL = new Set(["Pichu","Cleffa","Igglybuff","Togepi","Tyrogue","Smoochum","Elekid","Magby",
@@ -119,6 +119,21 @@ const SPECIAL = new Set(["Pichu","Cleffa","Igglybuff","Togepi","Tyrogue","Smooch
 const targets = new Set(); for(const k in DEX){ if(DEX[k].evo) targets.add(DEX[k].evo); } for(const k in BRANCH) BRANCH[k].forEach(x=>targets.add(x));
 const DEX_LIST = K.DEX_LIST.concat(GEN2.map(r=>[r[0], r[1]]));
 const WILD_POOL = DEX_LIST.map(r=>r[1]).filter(s=>!targets.has(s) && !SPECIAL.has(s));
+/* times dos líderes de Johto (HeartGold/SoulSilver) e do Red; níveis ajustados até a soma bater no poder calibrado */
+const RED = {leader:"Red", t:"electric", e:"🧢", power:814};
+const J_TEAMS = {
+  Falkner:[["Pidgey",9],["Pidgeotto",13]], Bugsy:[["Metapod",15],["Kakuna",15],["Scyther",17]],
+  Whitney:[["Clefairy",17],["Miltank",19]], Morty:[["Gastly",21],["Haunter",21],["Gengar",25],["Haunter",23]],
+  Chuck:[["Primeape",27],["Poliwrath",30]], Jasmine:[["Magnemite",30],["Magnemite",30],["Steelix",35]],
+  Pryce:[["Seel",30],["Dewgong",32],["Piloswine",34]], Clair:[["Dragonair",38],["Dragonair",38],["Dragonair",38],["Kingdra",41]],
+  Will:[["Xatu",40],["Jynx",41],["Exeggutor",41],["Slowbro",41],["Xatu",42]],
+  Koga:[["Ariados",40],["Venomoth",41],["Forretress",43],["Muk",42],["Crobat",44]],
+  Bruno:[["Hitmontop",42],["Hitmonlee",42],["Hitmonchan",42],["Onix",43],["Machamp",46]],
+  Karen:[["Umbreon",42],["Vileplume",42],["Gengar",45],["Murkrow",44],["Houndoom",47]],
+  Lance:[["Gyarados",44],["Dragonite",47],["Dragonite",47],["Aerodactyl",46],["Charizard",46],["Dragonite",50]],
+  Red:[["Pikachu",88],["Espeon",73],["Snorlax",75],["Venusaur",77],["Charizard",77],["Blastoise",77]],
+};
+assignFoeTeams(GYMS.concat(ELITE,[RED]), J_TEAMS, DEX);
 
 REGIONS.johto = Object.assign(REGIONS.johto, {
   ready:true, DEX, BRANCH, STONE, STARTERS, WILD_POOL, TYPE_CHART, GYMS, ELITE,
@@ -136,7 +151,7 @@ REGIONS.johto = Object.assign(REGIONS.johto, {
   ],
   BADGES: J_BADGES, DEX_LIST, WHEEL_ICON: J_WHEEL_ICON,
   REC_KEY:"kc_carreira_johto_v1", SAVE_KEY:"kc_carreira_johto_save_v1", DEX_KEY:"kc_carreira_johto_dex_v1",
-  RED: {leader:"Red", t:"electric", e:"🧢", power:450},
+  RED,
 });
 Object.assign(REGIONS.johto.RT, {
   dayNight:true, silver:true,

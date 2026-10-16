@@ -171,7 +171,7 @@ fonts = json.loads(rd(os.path.join(BASE, "fonts.json")))
 css = rd(os.path.join(BASE, "style_v2.css")).replace("__FONT_PS2P__", fonts["Press Start 2P"]).replace("__FONT_VT323__", fonts["VT323"])
 ui = rd(os.path.join(BASE, "ui_v2.js"))
 
-polish = rd(os.path.join(BASE, "polish.js"))
+polish = rd(os.path.join(BASE, "polish.js")) + "\n" + rd(os.path.join(BASE, "meta.js"))
 region = rd(os.path.join(BASE, "region.js"))
 gen2 = rd(os.path.join(BASE, "gen2_engine.js"))
 import hashlib
@@ -296,7 +296,7 @@ const CORE=["./","./kanto_extra.js?v="+V,"./johto.js?v="+V,"./hoenn.js?v="+V,"./
 self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c=>Promise.all(CORE.map(u=>c.add(u).catch(()=>{}))))); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });
 self.addEventListener("fetch",e=>{
-  const r=e.request; if(r.method!=="GET" || new URL(r.url).origin!==location.origin) return;
+  const r=e.request; if(r.method!=="GET" || new URL(r.url).origin!==location.origin || new URL(r.url).pathname.startsWith("/api/")) return;
   e.respondWith(fetch(r).then(res=>{ if(res && res.ok){ const cp=res.clone(); caches.open(CACHE).then(c=>c.put(r,cp)); } return res; })
     .catch(()=>caches.match(r,{ignoreSearch:false}).then(m=>m || (r.mode==="navigate" ? caches.match("./") : Response.error()))));
 });

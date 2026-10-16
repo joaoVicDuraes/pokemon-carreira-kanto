@@ -170,6 +170,7 @@ function phaseSound(){
 function afterRender(){
   if(!G) return;
   if(G.team) G.team.forEach(dexRegister);
+  try{ logShinies(); checkAch(); }catch(e){}
   if(G.phase==="gameover" || G.phase==="champion" || G.phase==="legend"){ clearSave(); try{ prepShare(); }catch(e){} } else saveGame();
   try{ phaseSound(); }catch(e){}
   setMuteBtn();
@@ -197,7 +198,7 @@ async function buildShareCard(){
   const W=720, H=1000, c=document.createElement('canvas'); c.width=W; c.height=H;
   const x=c.getContext('2d'); if(!x) return null;
   try{ await Promise.all([document.fonts.load('20px PS2P'), document.fonts.load('30px VT323')]); }catch(e){}
-  const col=({johto:['#2F6FD6','#0F2E78']})[REGION] || ['#E3350D','#7A1500'];
+  const col=({johto:['#2F6FD6','#0F2E78'], hoenn:['#2E9E5B','#0F4A2A']})[REGION] || ['#E3350D','#7A1500'];
   const rr=(X,Y,w,h,r)=>{ x.beginPath(); x.moveTo(X+r,Y); x.arcTo(X+w,Y,X+w,Y+h,r); x.arcTo(X+w,Y+h,X,Y+h,r); x.arcTo(X,Y+h,X,Y,r); x.arcTo(X,Y,X+w,Y,r); x.closePath(); };
   const txt=(s,X,Y,font,fill,al)=>{ x.font=font; x.fillStyle=fill; x.textAlign=al||'center'; x.fillText(s,X,Y); };
   const px=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();   // a fonte pixel não tem acento

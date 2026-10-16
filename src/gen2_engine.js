@@ -101,5 +101,5 @@ function legendScreen(){
   const slots=G.team.map(m=>`<div class="hof-slot">${front(m,'hof-img')}<div class="m-name" style="font-size:7px">${m.species}${m.shiny?' ✨':''}</div><div class="m-lv">Lv${m.lv}</div></div>`).join("");
   scene(`<div class="hof-title">LENDA DE ${RT.name.toUpperCase()}</div><div class="ribbon gold">VOCÊ VENCEU ${P.who.toUpperCase()}!</div>
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof', P.win);
+    ${menu(btn('restart','🔁 NOVA CARREIRA','',{primary:true}), shareBtn(), rankBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof', P.win);
 }

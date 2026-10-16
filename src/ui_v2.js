@@ -187,7 +187,7 @@ function scene(html, cls, tw){
   if(el && tw!=null) typewrite(el, tw);
 }
 function renderHUD(){
-  if(["title","how","pick","dex"].includes(G.phase)){ $hud.innerHTML=""; return; }
+  if(["title","how","pick","dex","ach","shinies","rank"].includes(G.phase)){ $hud.innerHTML=""; return; }
   const badges=GYMS.map((g,i)=>`<span class="hb ${i<G.gymIndex?'on':''}" title="${BADGE_NAMES[i]} — ${g.leader}">${badgeImg(i)}</span>`).join("")
     + `<span class="hb trophy ${G.phase==='champion'?'on':''}" title="Campeão da Liga">🏆</span>`;
   $hud.innerHTML=`<div class="hud-badges" role="img" aria-label="${G.gymIndex} de 8 insígnias">${badges}</div>
@@ -315,6 +315,7 @@ function title(){
       <div class="pokeball title-ball"><i></i></div><div class="starters ${soon?'soon':''}">${st}</div><div class="grass"></div></div>
     <div class="title-menu"><div class="press">— PRESSIONE START —</div>
       ${main}
+      ${typeof metaRow==='function'?metaRow():''}
       ${soon?'':`<div class="rec-card"><div class="rec-h">🏆 SEUS RECORDES</div>${rec}</div>`}
       ${optionsCard()}
       <div class="foot">${tot} POKéMON · 8 GINÁSIOS · ELITE FOUR<br>FAN GAME · SPRITES GBA<span class="kb"> · TECLAS 1-6 ESCOLHEM · ← → TROCAM A REGIÃO</span><span class="tch"> · ARRASTE PRO LADO PRA TROCAR A REGIÃO</span></div></div>`, 'title');
@@ -677,7 +678,7 @@ function gameOverScreen(){
     : `Você perdeu para ${G.battle?G.battle.foe.leader:'o desafio'}. ${(RT&&RT.loseLine)||'Em Kanto não existe revanche oficial: a carreira termina aqui.'}`;
   scene(`<div class="over-title">${G.battle&&G.battle.isRed?POST().Who.toUpperCase()+' VENCEU':'FIM DA CARREIRA'}</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="dialog" id="tw"></div>${trainerCard(false)}${logHTML()}
-    ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
+    ${menu(btn('restart','🔁 COMEÇAR DO ZERO','Nova carreira, novo inicial',{primary:true}), shareBtn(), rankBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'over',
     cause+'\nToda lenda também já perdeu. Levante e tente de novo.');
 }
 function hofScreen(){
@@ -687,7 +688,7 @@ function hofScreen(){
   const silverBtn = RT.silver && REGIONS[REGION].RED ? btn('silver',`${POST().ic} IR PARA ${POST().place.toUpperCase()}`,POST().climb,{primary:true}) : '';
   scene(`${conf}<div class="hof-title">HALL DA FAMA</div><div class="ribbon gold">CAMPEÃO DE ${RT.name.toUpperCase()}!</div>${G.newRecord?'<div class="newrec">★ NOVO RECORDE! ★</div>':''}
     <div class="hof-grid">${slots}</div><div class="dialog" id="tw"></div>${trainerCard(true)}${logHTML()}
-    ${menu(silverBtn, btn('restart','🔁 NOVA CARREIRA','',{primary:!silverBtn}), shareBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
+    ${menu(silverBtn, btn('restart','🔁 NOVA CARREIRA','',{primary:!silverBtn}), shareBtn(), rankBtn(), btn('dex','📕 VER POKéDEX'), btn('title','🏠 TELA INICIAL'))}`, 'hof',
     RT.hofLine||'Seu Rival estende a mão: "Me enganei sobre você. Kanto tem um novo Campeão."\nSeu time entra para o Hall da Fama!');
 }
 
@@ -714,7 +715,7 @@ function act(id, arg){
     case 'restart': G=newGame(); G.phase='pick'; break;
     case 'choose': chooseStarter(arg); return;
     case 'roll': G.phase='roulette'; break;
-    case 'train': doTrain(); return;
+    case 'train': G.stats.trained=(G.stats.trained||0)+1; doTrain(); return;
     case 'search': doSearch(); return;
     case 'back': G.phase='hub'; break;
     case 'challenge': challenge(false); return;
@@ -756,7 +757,7 @@ function act(id, arg){
     case 'share': shareCareer(); return;
     case 'dexF': G.dexF=arg; break;
     case 'dexSel': dexShow(arg); return;
-    default: return;
+    default: if(typeof metaAct==='function' && metaAct(id, arg)) break; return;
   }
   if(id!=='release' && id!=='releaseNo' && id!=='releaseYes') G.releaseAsk=null;
   render();
@@ -767,6 +768,7 @@ document.addEventListener('click', e=>{
 });
 document.addEventListener('keydown', e=>{
   if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName||'')) return;   /* digitando o nome do ranking */
   if(G && G.phase==='title' && (e.key==='ArrowLeft'||e.key==='ArrowRight')){ e.preventDefault(); act(e.key==='ArrowLeft'?'regPrev':'regNext'); return; }
   if(e.key>='1' && e.key<='6'){
     const list=[...$scene.querySelectorAll('.menu .btn:not(:disabled), .starters-pick .scard')];

@@ -18,6 +18,7 @@ kanto_extra.js        sprites de costas e shiny de Kanto (gerado; baixa logo dep
 johto.js / hoenn.js   pacotes das regiões (gerados; o de Hoenn depende do de Johto)
 sw.js, manifest.webmanifest, icon-*.png   app instalável e cache offline (gerados)
 og.png                prévia do link (WhatsApp, Discord, X)
+api/ranking.js        ranking global (função serverless do Vercel + Upstash Redis)
 src/
   assemble.py         gera tudo acima (python src/assemble.py)
   game_template.html  lógica base: Pokédex de Kanto, tipos, ginásios, eventos por ginásio
@@ -25,6 +26,7 @@ src/
   gen2_engine.js      poder = soma do time, ovos, amizade, dia/noite, desafio pós-Liga
   ui_v2.js            interface e telas
   polish.js           salvar/continuar, Pokédex, sons 8-bit, card de compartilhar
+  meta.js             conquistas, coleção de shinies e tela do ranking global
   region.js           motor de regiões e lobby (◀ KANTO ▶ JOHTO ▶ HOENN)
   style_v2.css        visual estilo GBA, modo escuro
   johto_data.js / johto_events.js   dados e roletas de Johto
@@ -39,7 +41,7 @@ src/
 
 ```
 python src/assemble.py
-node src/test_game.js && node src/test_johto.js && node src/test_hoenn.js
+node src/test_game.js && node src/test_johto.js && node src/test_hoenn.js && node src/test_meta.js
 ```
 
 ## Publicar no Vercel
@@ -48,12 +50,17 @@ node src/test_game.js && node src/test_johto.js && node src/test_hoenn.js
 2. Framework Preset: **Other**. Deixe Build Command e Output Directory vazios.
 3. Deploy. O `index.html` da raiz vira a página principal.
 
+## Ranking global: ativar o banco (uma vez)
+
+1. No projeto do Vercel: **Storage → Create Database → Upstash for Redis** (plano grátis) e conecte ao projeto.
+2. O Vercel cria as variáveis `KV_REST_API_URL` e `KV_REST_API_TOKEN` sozinho. Faça um **Redeploy**.
+3. Sem o banco, o jogo funciona normal e a tela do ranking avisa que ele ainda não foi ativado.
+
+O jogo roda no navegador, então não dá pra provar que uma carreira foi jogada de verdade. O servidor recalcula a pontuação, recusa combinações impossíveis (Liga sem 8 insígnias, poucos dias), limita envios por IP e limpa os nomes.
+
 ## Ideias para o futuro
 
 - **Novas gerações** (Sinnoh em diante): seguir o roteiro no topo de `src/region.js`.
-- **Ranking global:** hoje os recordes ficam no navegador de cada um; precisa de um servidor ou banco (ex.: Vercel KV / Supabase) e de alguma proteção contra recorde falso.
-- **Lista de shinies visível:** uma tela com todos os shinies que você já teve, por região (os dados já são guardados na Pokédex).
-- **Sistema de conquistas:** metas como "vencer só com o inicial", "fechar a Pokédex", "campeão sem perder Pokémon".
 
 ## Aviso
 
